@@ -156,7 +156,7 @@ void lcdSetLine(u8 linemode, u8 cycle, u8 duty, u8 hlpen) {
 	HLPEN = hlpen - 1;
 }
 
-//´¹Ö±Ïß
+//åž‚ç›´çº¿
 void lcdDrawVerLine(u16 x, u16 ys, u16 ye, u16 color) {
 	u16 cnt = 0;
 	int i = 0;
@@ -185,7 +185,7 @@ void lcdDrawVerLine(u16 x, u16 ys, u16 ye, u16 color) {
 	}
 }
 
-//Ë®Æ½Ïß
+//æ°´å¹³çº¿
 void lcdDrawHorLine(u16 y, u16 xs, u16 xe, u16 color) {
 	u16 cnt = 0;
 	int i = 0;
@@ -306,7 +306,7 @@ void lcdDrawPic(u16 xs, u16 ys, u16 row, u16 col, u16 fore, u16 back,
 	}
 }
 
-//»­·½ÐÎ
+//ç”»æ–¹å½¢
 void lcdDrawRectan(u16 xs, u16 ys, u16 len, u16 wid,u16 color)
 {
 	lcdDrawVerLine(xs, ys, ys+wid, color);
@@ -316,6 +316,32 @@ void lcdDrawRectan(u16 xs, u16 ys, u16 len, u16 wid,u16 color)
 }
 
 void lcdDrawGrid(u16 xs, u16 ys, u8 row, u8 col, u8 width, u16 color) {
+	u8 i, j;
+
+	lcdDrawVerLine(xs, ys, ys + row * width, color);
+	lcdDrawVerLine(xs + col * width, ys, ys + row * width, color);
+	lcdDrawHorLine(ys, xs, xs + col * width, color);
+	lcdDrawHorLine(ys + row * width, xs, xs + col * width, color);
+
+	for (i = 1; i < 5 * (col+5) ; i++)
+		lcdDrawVerLine(xs + (width / 5) * i, ys + width * (row / 2) - 1,
+				ys + width * (row / 2) + 1, color);
+	for (i = 1; i < 5 * (row+2); i++)
+		lcdDrawHorLine(ys + (width / 5) * i, xs + width * (col / 2) - 1,
+				xs + width * (col / 2) + 1, color);
+
+	for (j = 1; j < col; j++) {
+		u16 x = xs + j * width;
+		for (i = 1; i < 5 * (row+2); i++)
+			lcdDrawPoint(x, ys + (width / 5) * i, color);
+	}
+	for (j = 1; j < row; j++) {
+		u16 y = ys + j * width;
+		for (i = 1; i < 5 * (col+5); i++)
+			lcdDrawPoint(xs + (width / 5) * i, y, color);
+	}
+
+	/*
 	u8 i, j;
 
 	lcdDrawVerLine(xs, ys, ys + row * width, color);
@@ -340,6 +366,7 @@ void lcdDrawGrid(u16 xs, u16 ys, u8 row, u8 col, u8 width, u16 color) {
 		for (i = 1; i < 5 * col; i++)
 			lcdDrawPoint(xs + (width / 5) * i, y, color);
 	}
+	*/
 }
 
 void lcdDispStringSmall(u16 xs, u16 ys, u16 fore, u16 back, const char*str) {
@@ -394,7 +421,7 @@ void lcdDispFloatBig(u16 xs, u16 ys, u16 fore, u16 back, float flo,int weishu) {
 
 
 
-//ÏÔÊ¾Í¼Æ¬
+//æ˜¾ç¤ºå›¾ç‰‡
 void DisplayPic(u16 x_start,u16 y_start,u16 width,u16 depth, u8 *p,u8 factor)
 {
 	u16 x,y;
@@ -409,6 +436,26 @@ void DisplayPic(u16 x_start,u16 y_start,u16 width,u16 depth, u8 *p,u8 factor)
 			lcdDrawPoint(x+x_start, y+y_start ,color);
 		}
 	}
+}
+
+void lcdDispNumtable(int Num_X,int Num_Y){//æŒ‰é”®ç»˜åˆ¶ä»£ç 
+	lcddrawsqur(Num_X,Num_X+50,Num_Y,Num_Y+50,BLACK, "  1");
+	lcddrawsqur(Num_X+50,Num_X+100,Num_Y,Num_Y+50,BLACK, "  2");
+	lcddrawsqur(Num_X+100,Num_X+150,Num_Y,Num_Y+50,BLACK, "  3");
+	lcddrawsqur(Num_X,Num_X+50,Num_Y+50,Num_Y+100,BLACK, "  4");
+	lcddrawsqur(Num_X+50,Num_X+100,Num_Y+50,Num_Y+100,BLACK, "  5");
+	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+50,Num_Y+100,BLACK, "  6");
+	lcddrawsqur(Num_X,Num_X+50,Num_Y+100,Num_Y+150,BLACK, "  7");
+	lcddrawsqur(Num_X+50,Num_X+100,Num_Y+100,Num_Y+150,BLACK, "  8");
+	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+100,Num_Y+150,BLACK, "  9");
+	lcddrawsqur(Num_X,Num_X+50,Num_Y+150,Num_Y+200,BLACK, "  0");
+	lcddrawsqur(Num_X+50,Num_X+100,Num_Y+150,Num_Y+200,BLACK, "  .");
+	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+150,Num_Y+200,BLACK, " clc");
+
+	lcddrawsqur(Num_X,Num_X+50,Num_Y+220,Num_Y+260,'black', "Mode");//0æµ‹é‡æ¨¡å¼	/1ç»˜å›¾æ¨¡å¼		/2è¯Šæ–­æ¨¡å¼
+	lcddrawsqur(Num_X+50,Num_X+100,Num_Y+220,Num_Y+260,'black', "F_L");
+	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+220,Num_Y+260,'black', "F_H");
+
 }
 
 void lcddrawsqur(u16 xs,u16 xe,u16 ys, u16 ye, u16 color, const char*str){
@@ -433,24 +480,4 @@ void lcdDrawRect(u16 xs, u16 ys, u16 xe, u16 ye, u16 color)
 	lcdDrawHorLine(ye, xs, xe, color);
 	lcdDrawVerLine(xs, ys, ye, color);
 	lcdDrawVerLine(xe, ys, ye, color);
-}
-
-void IcdDispNumtable(int Num_X,int Num_Y){//°´¼ü»æÖÆ´úÂë
-	lcddrawsqur(Num_X,Num_X+50,Num_Y,Num_Y+50,BLACK, "  1");
-	lcddrawsqur(Num_X+50,Num_X+100,Num_Y,Num_Y+50,BLACK, "  2");
-	lcddrawsqur(Num_X+100,Num_X+150,Num_Y,Num_Y+50,BLACK, "  3");
-	lcddrawsqur(Num_X,Num_X+50,Num_Y+50,Num_Y+100,BLACK, "  4");
-	lcddrawsqur(Num_X+50,Num_X+100,Num_Y+50,Num_Y+100,BLACK, "  5");
-	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+50,Num_Y+100,BLACK, "  6");
-	lcddrawsqur(Num_X,Num_X+50,Num_Y+100,Num_Y+150,BLACK, "  7");
-	lcddrawsqur(Num_X+50,Num_X+100,Num_Y+100,Num_Y+150,BLACK, "  8");
-	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+100,Num_Y+150,BLACK, "  9");
-	lcddrawsqur(Num_X,Num_X+50,Num_Y+150,Num_Y+200,BLACK, "  0");
-	lcddrawsqur(Num_X+50,Num_X+100,Num_Y+150,Num_Y+200,BLACK, "  .");
-	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+150,Num_Y+200,BLACK, "Ent");
-	lcdDrawRect(Num_X, Num_Y+210, Num_X+99, Num_Y+275, 'black');
-	lcddrawsqur(Num_X+101,Num_X+150,Num_Y+210,Num_Y+275,'black', "Back");
-	lcddrawsqur(Num_X,Num_X+50,Num_Y+280,Num_Y+320,'black', "Hz");
-	lcddrawsqur(Num_X+50,Num_X+100,Num_Y+280,Num_Y+320,'black', "KHz");
-	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+280,Num_Y+320,'black', "MHz");
 }
