@@ -4,7 +4,7 @@
  * Machine generated for CPU 'cpu' in SOPC Builder design 'nios2'
  * SOPC Builder design path: ../../nios2.sopcinfo
  *
- * Generated: Tue Jan 05 15:04:14 CST 2021
+ * Generated: Wed Jan 06 20:33:14 CST 2021
  */
 
 /*
@@ -165,19 +165,19 @@
 #define ALT_NUM_INTERNAL_INTERRUPT_CONTROLLERS 1
 #define ALT_NUM_INTERRUPT_CONTROLLERS 1
 #define ALT_STDERR "/dev/jtag_uart"
-#define ALT_STDERR_BASE 0x401100
+#define ALT_STDERR_BASE 0x401110
 #define ALT_STDERR_DEV jtag_uart
 #define ALT_STDERR_IS_JTAG_UART
 #define ALT_STDERR_PRESENT
 #define ALT_STDERR_TYPE "altera_avalon_jtag_uart"
 #define ALT_STDIN "/dev/jtag_uart"
-#define ALT_STDIN_BASE 0x401100
+#define ALT_STDIN_BASE 0x401110
 #define ALT_STDIN_DEV jtag_uart
 #define ALT_STDIN_IS_JTAG_UART
 #define ALT_STDIN_PRESENT
 #define ALT_STDIN_TYPE "altera_avalon_jtag_uart"
 #define ALT_STDOUT "/dev/jtag_uart"
-#define ALT_STDOUT_BASE 0x401100
+#define ALT_STDOUT_BASE 0x401110
 #define ALT_STDOUT_DEV jtag_uart
 #define ALT_STDOUT_IS_JTAG_UART
 #define ALT_STDOUT_PRESENT
@@ -186,12 +186,39 @@
 
 
 /*
+ * dout configuration
+ *
+ */
+
+#define ALT_MODULE_CLASS_dout altera_avalon_pio
+#define DOUT_BASE 0x401040
+#define DOUT_BIT_CLEARING_EDGE_REGISTER 0
+#define DOUT_BIT_MODIFYING_OUTPUT_REGISTER 0
+#define DOUT_CAPTURE 0
+#define DOUT_DATA_WIDTH 16
+#define DOUT_DO_TEST_BENCH_WIRING 0
+#define DOUT_DRIVEN_SIM_VALUE 0
+#define DOUT_EDGE_TYPE "NONE"
+#define DOUT_FREQ 100000000
+#define DOUT_HAS_IN 1
+#define DOUT_HAS_OUT 0
+#define DOUT_HAS_TRI 0
+#define DOUT_IRQ -1
+#define DOUT_IRQ_INTERRUPT_CONTROLLER_ID -1
+#define DOUT_IRQ_TYPE "NONE"
+#define DOUT_NAME "/dev/dout"
+#define DOUT_RESET_VALUE 0
+#define DOUT_SPAN 16
+#define DOUT_TYPE "altera_avalon_pio"
+
+
+/*
  * fmeasure_clk configuration
  *
  */
 
 #define ALT_MODULE_CLASS_fmeasure_clk altera_avalon_pio
-#define FMEASURE_CLK_BASE 0x401090
+#define FMEASURE_CLK_BASE 0x4010a0
 #define FMEASURE_CLK_BIT_CLEARING_EDGE_REGISTER 0
 #define FMEASURE_CLK_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define FMEASURE_CLK_CAPTURE 0
@@ -218,7 +245,7 @@
  */
 
 #define ALT_MODULE_CLASS_fmeasure_sqr altera_avalon_pio
-#define FMEASURE_SQR_BASE 0x401080
+#define FMEASURE_SQR_BASE 0x401090
 #define FMEASURE_SQR_BIT_CLEARING_EDGE_REGISTER 0
 #define FMEASURE_SQR_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define FMEASURE_SQR_CAPTURE 0
@@ -245,7 +272,7 @@
  */
 
 #define ALT_MODULE_CLASS_fre_out_kw altera_avalon_pio
-#define FRE_OUT_KW_BASE 0x401070
+#define FRE_OUT_KW_BASE 0x401080
 #define FRE_OUT_KW_BIT_CLEARING_EDGE_REGISTER 0
 #define FRE_OUT_KW_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define FRE_OUT_KW_CAPTURE 0
@@ -302,7 +329,7 @@
  */
 
 #define ALT_MODULE_CLASS_jtag_uart altera_avalon_jtag_uart
-#define JTAG_UART_BASE 0x401100
+#define JTAG_UART_BASE 0x401110
 #define JTAG_UART_IRQ 1
 #define JTAG_UART_IRQ_INTERRUPT_CONTROLLER_ID 0
 #define JTAG_UART_NAME "/dev/jtag_uart"
@@ -320,7 +347,7 @@
  */
 
 #define ALT_MODULE_CLASS_keyirq altera_avalon_pio
-#define KEYIRQ_BASE 0x4010b0
+#define KEYIRQ_BASE 0x4010c0
 #define KEYIRQ_BIT_CLEARING_EDGE_REGISTER 0
 #define KEYIRQ_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define KEYIRQ_CAPTURE 1
@@ -347,7 +374,7 @@
  */
 
 #define ALT_MODULE_CLASS_keyvalue altera_avalon_pio
-#define KEYVALUE_BASE 0x4010a0
+#define KEYVALUE_BASE 0x4010b0
 #define KEYVALUE_BIT_CLEARING_EDGE_REGISTER 0
 #define KEYVALUE_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define KEYVALUE_CAPTURE 0
@@ -374,7 +401,7 @@
  */
 
 #define ALT_MODULE_CLASS_lcd lcd
-#define LCD_BASE 0x4010f8
+#define LCD_BASE 0x401108
 #define LCD_IRQ -1
 #define LCD_IRQ_INTERRUPT_CONTROLLER_ID -1
 #define LCD_NAME "/dev/lcd"
@@ -454,7 +481,7 @@
  */
 
 #define ALT_MODULE_CLASS_switch_4wire altera_avalon_pio
-#define SWITCH_4WIRE_BASE 0x401020
+#define SWITCH_4WIRE_BASE 0x401070
 #define SWITCH_4WIRE_BIT_CLEARING_EDGE_REGISTER 0
 #define SWITCH_4WIRE_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define SWITCH_4WIRE_CAPTURE 0
@@ -481,13 +508,13 @@
  */
 
 #define ALT_MODULE_CLASS_sysid altera_avalon_sysid_qsys
-#define SYSID_BASE 0x4010f0
+#define SYSID_BASE 0x401100
 #define SYSID_ID 0
 #define SYSID_IRQ -1
 #define SYSID_IRQ_INTERRUPT_CONTROLLER_ID -1
 #define SYSID_NAME "/dev/sysid"
 #define SYSID_SPAN 8
-#define SYSID_TIMESTAMP 1609829925
+#define SYSID_TIMESTAMP 1609935582
 #define SYSID_TYPE "altera_avalon_sysid_qsys"
 
 
@@ -550,7 +577,7 @@
  */
 
 #define ALT_MODULE_CLASS_toucH_scl altera_avalon_pio
-#define TOUCH_SCL_BASE 0x4010c0
+#define TOUCH_SCL_BASE 0x4010d0
 #define TOUCH_SCL_BIT_CLEARING_EDGE_REGISTER 0
 #define TOUCH_SCL_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define TOUCH_SCL_CAPTURE 0
@@ -577,7 +604,7 @@
  */
 
 #define ALT_MODULE_CLASS_touch_irq altera_avalon_pio
-#define TOUCH_IRQ_BASE 0x4010e0
+#define TOUCH_IRQ_BASE 0x4010f0
 #define TOUCH_IRQ_BIT_CLEARING_EDGE_REGISTER 0
 #define TOUCH_IRQ_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define TOUCH_IRQ_CAPTURE 1
@@ -604,7 +631,7 @@
  */
 
 #define ALT_MODULE_CLASS_touch_sda altera_avalon_pio
-#define TOUCH_SDA_BASE 0x4010d0
+#define TOUCH_SDA_BASE 0x4010e0
 #define TOUCH_SDA_BIT_CLEARING_EDGE_REGISTER 0
 #define TOUCH_SDA_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define TOUCH_SDA_CAPTURE 0
@@ -631,7 +658,7 @@
  */
 
 #define ALT_MODULE_CLASS_vpp altera_avalon_pio
-#define VPP_BASE 0x401040
+#define VPP_BASE 0x401030
 #define VPP_BIT_CLEARING_EDGE_REGISTER 0
 #define VPP_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define VPP_CAPTURE 0
@@ -658,7 +685,7 @@
  */
 
 #define ALT_MODULE_CLASS_vpp_found altera_avalon_pio
-#define VPP_FOUND_BASE 0x401030
+#define VPP_FOUND_BASE 0x401020
 #define VPP_FOUND_BIT_CLEARING_EDGE_REGISTER 0
 #define VPP_FOUND_BIT_MODIFYING_OUTPUT_REGISTER 0
 #define VPP_FOUND_CAPTURE 0
