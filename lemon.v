@@ -6,16 +6,16 @@
 module lemon
 (
 	// clock and reset
-	input 			CLK_50M,						
-	input				CLK_IN,	      
+	input 			CLK_50M,			
+	input				CLK_IN,	     
 	output 			CLK_OUT,
-	input 			RST_N,	      
+	input 			RST_N,	     
 	
 	// toggle switch
 	input  [1:0]	SW,      
 
 	// led
-	output [3:0]	LED,     
+	output [3:0]	LED,   
 
 	// sdram interface
 	inout  [15:0]	DRAM_DQ,
@@ -69,7 +69,7 @@ module lemon
 	 * for gpio_pb is on the outside
 	 * with io[0] is near GND, with io[15] is near VCC
 	 */
-	inout [15:0]	GPIO_PA,     
+	inout [15:0]	GPIO_PA,    
 	inout [15:0]	GPIO_PB,
 	inout [15:0]	GPIO_PC,
 	inout [15:0]	GPIO_PD
@@ -114,8 +114,10 @@ module lemon
 		.fre_out_kw_export(kw) ,			// output [31:0] fre_out_kw_export_sig
 		.samp_clk_kw_export(kw2) ,			// output [31:0] samp_clk_kw_export_sig
 		.times_export(T) ,					// output [31:0] times_export_sig
+		.dout_export(tro_out) ,				// input [15:0] dout_export_sig
 		.vpp_export(Vpp) ,					// input [11:0] vpp_export_sig
 		.vpp_found_export(Vpp_found) 		// input  vpp_found_export_sig
+
 	);
 	
 	////////////////////////////////system////////////////////////////////////////////
@@ -163,6 +165,7 @@ module lemon
 		.c2(CLK_1M)
 	);
 
+	assign LED = 4'b1111;
 
 //////////////////////////////////扫频输出：20 ~ 10MHz//////////////////////////////////////////
 	
@@ -179,8 +182,9 @@ module lemon
 	);
 	
 	// DAC904
-	//assign GPIO_PB[14:1] = Sin_out;	//输出给904
-	assign CLK_OUT = CLK_100M;
+	assign GPIO_PB[14:1] = Sin_out[13:0];	//输出给904
+	//assign CLK_OUT = CLK_100M;
+	assign CLK_OUT = CLK_sample;
 	
 ////////////////////////////ADS805：读取输入信号（采样时钟）并获得最大值//////////////////////////////
 	
@@ -193,7 +197,7 @@ module lemon
 	wire Vpp_found;
 	
 	
-	//assign Data_in = GPIO_PD[13:2];
+	assign Data_in = GPIO_PD[13:2];
 	//assign GPIO_PA[0] = CLK_sample;	//由于采样频率可变，因此采样时钟单独给805
 	
 	DDS1 CLKsample		//小于100k实时采样，大于100k等效采样
@@ -234,10 +238,10 @@ module lemon
 		switch_reg <= switch;
 	end
 	
-	//assign GPIO_PD[2] = switch_reg[0];	//switch1-输入出R1:0接1短
-	//assign GPIO_PB[12]= switch_reg[1];	//switch2-电子开关1:0高1低
-	//assign GPIO_PB[14]= switch_reg[2];	//switch3-电子开关2:0入1出
-	//assign GPIO_PD[4]= switch_reg[3];		//switch4-输出处R2:0接1断
+	assign GPIO_PB[0]  = switch_reg[0];	//switch1-输入出R1:0接1短--1
+	assign GPIO_PC[0]  = switch_reg[1];	//switch2-电子开关1:0高1低--4
+	assign GPIO_PD[15] = switch_reg[2];	//switch3-电子开关2:0入1出--2
+	assign GPIO_PC[1]  = switch_reg[3];	//switch4-输出处R2:0接1断--3
 	
 /////////////////////////////////////ADS1118///////////////////////////////////////////////
 
@@ -247,19 +251,19 @@ module lemon
 	wire CS;
 	wire SCLK;
 		
-	//assign GPIO_PB[9] = Din;
-	//assign Dout = GPIO_PB[12];
-	//assign GPIO_PB[8]  = SCLK;
-	//assign GPIO_PB[7]  = CS;
+	assign GPIO_PA[14] = Din;
+	assign Dout = GPIO_PA[13];
+	assign GPIO_PA[15]  = SCLK;
+	assign GPIO_PB[15]  = CS;
 	
 	ADS1118 ADS1118_u1
 	(
 		.CLK_50M(CLK_50M) ,	// input  CLK_50M_sig
-		.rst_n(RST_N) ,	// input  rst_n_sig
-		.DOUT(Dout) ,	// input  DOUT_sig
-		.sclk(SCLK) ,	// output  sclk_sig
-		.DIN(Din) ,	// output  DIN_sig
-		.CS(CS) ,	// output  CS_sig
+		.rst_n(RST_N) ,		// input  rst_n_sig
+		.DOUT(Dout) ,			// input  DOUT_sig
+		.sclk(SCLK) ,			// output  sclk_sig
+		.DIN(Din) ,				// output  DIN_sig
+		.CS(CS) ,				// output  CS_sig
 		.data_out(tro_out) 	// output [15:0] data_out_sig
 	);
 	
