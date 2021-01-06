@@ -5,7 +5,7 @@
  *      Author: hailiang
  */
 
-//ÓÃÓÚÏÔÊ¾¶¯»­
+//ç”¨äºæ˜¾ç¤ºåŠ¨ç”»
 
 #ifndef LCD_H_
 #define LCD_H_
@@ -13,8 +13,8 @@
 #include "define.h"
 #include "ascii.h"
 
-#define  HDP  799   //Ë®Æ½·Ö±æÂÊ800
-#define  VDP  479   //´¹Ö±·Ö±æÂÊ480    //Éè¼ÆUI½çÃæÊ±£¬ÏÖÔÚ²İÖ½ÉÏ»­Ò»¸ö²İÍ¼£¬²¢°ÑÃ¿Ò»¸öÄ£¿éµÄ×ø±êÖµ±ê³öÀ´¡£
+#define  HDP  799   //æ°´å¹³åˆ†è¾¨ç‡800
+#define  VDP  479   //å‚ç›´åˆ†è¾¨ç‡480    //è®¾è®¡UIç•Œé¢æ—¶ï¼Œç°åœ¨è‰çº¸ä¸Šç”»ä¸€ä¸ªè‰å›¾ï¼Œå¹¶æŠŠæ¯ä¸€ä¸ªæ¨¡å—çš„åæ ‡å€¼æ ‡å‡ºæ¥ã€‚
 #define  HT   1055
 #define  HPS  46
 #define  LPS  0
@@ -42,7 +42,6 @@ enum COLOR {
 	YELLOW = 0xFFE0,
 	WHITE = 0xFFFF,
 	BACKGROUND = 0xFFFF,
-	Dva_PINK_Deep =0xF813, //dvaÉî·ÛÉ«
 };
 
 int lcdInit(void);
@@ -54,30 +53,30 @@ void lcdSetCursor(u16 x, u16 y);
 void lcdDrawPoint(u16 x, u16 y, u16 color);
 u16 lcdGetPoint(u16 x, u16 y);
 
-void lcdRectClear(u16 xs, u16 ys, u16 xe, u16 ye, u16 color);     //ÇåÆÁ     //½«Ä³¸ö¾ØĞÎ·¶Î§ÄÚµÄÏñËØÈ«²¿Ìî³ä³ÉÄ³ÑÕÉ«
+void lcdRectClear(u16 xs, u16 ys, u16 xe, u16 ye, u16 color);     //æ¸…å±     //å°†æŸä¸ªçŸ©å½¢èŒƒå›´å†…çš„åƒç´ å…¨éƒ¨å¡«å……æˆæŸé¢œè‰²
 void lcdSetLine(u8 linemode, u8 cycle, u8 duty, u8 hlpen);
-void lcdDrawVerLine(u16 x, u16 ys, u16 ye, u16 color);   //»­Ïß--Ë®Æ½¡¢ÊúÖ±¡¢ÇúÏß
+void lcdDrawVerLine(u16 x, u16 ys, u16 ye, u16 color);   //ç”»çº¿--æ°´å¹³ã€ç«–ç›´ã€æ›²çº¿
 void lcdDrawHorLine(u16 y, u16 xs, u16 xe, u16 color);
 void lcdDrawLine(u16 xs, u16 ys, u16 xe, u16 ye, u16 color);
 
 void lcdDrawPic(u16 xs, u16 ys, u16 row, u16 col, u16 fore, u16 back,
-volatile const u8*pcode);
-void lcdDrawGrid(u16 xs, u16 ys, u8 row, u8 col, u8 width, u16 color);   //»­Íø¸ñ
+		volatile const u8*pcode);
+void lcdDrawGrid(u16 xs, u16 ys, u8 row, u8 col, u8 width, u16 color);   //ç”»ç½‘æ ¼
 
-//×Ö·û´®Êä³ö--Ğ¡¡¢´ó
+//å­—ç¬¦ä¸²è¾“å‡º--å°ã€å¤§
 void lcdDispStringSmall(u16 xs, u16 ys, u16 fore, u16 back, const char*str);
 void lcdDispStringBig(u16 xs, u16 ys, u16 fore, u16 back, const char*str);
 
-//ÕûÊıÊä³ö
+//æ•´æ•°è¾“å‡º
 void lcdDispDecSmall(u16 xs, u16 ys, u16 fore, u16 back, int dec);
 void lcdDispDecBig(u16 xs, u16 ys, u16 fore, u16 back, int dec);
 
-//£¨Ç°Á½ĞĞ£©¸¡µãÊıÊä³ö   //fore & back Ç°¾°É«ºÍ±³¾°É«
+//ï¼ˆå‰ä¸¤è¡Œï¼‰æµ®ç‚¹æ•°è¾“å‡º   //fore & back å‰æ™¯è‰²å’ŒèƒŒæ™¯è‰²
 void lcdDispFloatSmall(u16 xs, u16 ys, u16 fore, u16 back, float flo);
 void lcdDispFloatBig(u16 xs, u16 ys, u16 fore, u16 back, float flo,int weishu);
 void DisplayPic(u16 x_start,u16 y_start,u16 width,u16 depth, u8 *p,u8 factor);
 
-void IcdDispNumtable(int Num_X,int Num_Y);
+void lcdDispNumtable(int Num_X,int Num_Y);
 void lcddrawsqur(u16 xs,u16 xe,u16 ys, u16 ye, u16 color, const char*str);
 void lcdDrawRect(u16 xs, u16 ys, u16 xe, u16 ye, u16 color);
 
