@@ -331,6 +331,7 @@ void button_table(int page){
 				lcdDispDecSmall(129, 425, BLACK, WHITE, num_output);
 			}
 			Range_up_data = num_output;
+			num_output = 0;
 		}
 		else{
 			if(num_output < 10){
@@ -339,6 +340,7 @@ void button_table(int page){
 				lcdDispDecSmall(129, 385, BLACK, WHITE, num_output);
 			}
 			Range_down_data = num_output;
+			num_output = 0;
 		}
 		/*按键功能定义区——End*/
 	}
