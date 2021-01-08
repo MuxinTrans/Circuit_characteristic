@@ -4,7 +4,7 @@
  *  Created on: May 23, 2017
  *      Author: hailiang
  */
-#define bit_length 10
+#define bit_length 8
 
 #include "touch.h"
 #include "lcd.h"
@@ -13,8 +13,11 @@
 int bitnum;
 int bit_array[bit_length]={0};
 int bit_pointer = 0;
+int num_output = 0;
 extern int mode = 0, Range_w = 0;//Range_w=0-F_L|1-F_H
 extern int Num_X = 50,Num_Y = 40;
+extern double Range_up_data = 0,Range_down_data = 0;
+extern int Troubleshooting,draw_flag;
 
 int touchInit(void) {
 	i2cInit();
@@ -42,7 +45,7 @@ int touchIrqInit(void) {
 
 tcdata local = { .id = 1, .status = TOUCH_NONE, };
 
-int touchResponse(int x_low, int x_high, int y_low, int y_high, int page) {//°´¼üÏìÓ¦º¯Êý£¬°´ÏÂ±äÉ«
+int touchResponse(int x_low, int x_high, int y_low, int y_high, int page) {//æŒ‰é”®å“åº”å‡½æ•°ï¼ŒæŒ‰ä¸‹å˜è‰²
 	if((local.now.x > x_low) && (local.now.x < x_high) && (local.now.y > y_low) && (local.now.y < y_high) && (local.status == 0))
 	{
 		lcdRectClear(x_low, y_low, x_high,y_high, DGRAY);
@@ -58,9 +61,6 @@ int touchResponse(int x_low, int x_high, int y_low, int y_high, int page) {//°´¼
 		return 2;
 }
 
-int model=0;
-int status_value;
-int pause1=0;
 unsigned char TouchValidFlag=0;
 char TouchValue='0';
 void touchIsr(void* isr_context) {
@@ -68,21 +68,19 @@ void touchIsr(void* isr_context) {
 
 	touchGetRaw(&local);
 	TouchValidFlag=1;
-	status_value=local.status;
 	button_table(0);
-
 }
 
 void button_table(int page){
 	/****************** -1- *********************/
 	if(touchResponse(Num_X, Num_X+50, Num_Y, Num_Y+50, page) == 1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if((bit_pointer == 0) && (Range_w)){
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
 		else if((bit_pointer == 0) && (!Range_w)){
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
 		if(bit_array <= (bit_length-1))
@@ -90,11 +88,11 @@ void button_table(int page){
 			bit_pointer++;
 			bit_array[bit_pointer]=1;
 			if(Range_w)
-				lcdDispDecSmall(130+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
 			else
-				lcdDispDecSmall(130+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X, Num_X+50, Num_Y, Num_Y+50, page) == 0)
 	{
@@ -103,12 +101,12 @@ void button_table(int page){
 	/****************** -2- *********************/
 	if(touchResponse(Num_X+50, Num_X+100, Num_Y, Num_Y+50, page) == 1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if((bit_pointer == 0) && (Range_w)){
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
 		else if((bit_pointer == 0) && (!Range_w)){
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
 		if(bit_pointer <= bit_length-1)
@@ -116,11 +114,11 @@ void button_table(int page){
 			bit_pointer++;
 			bit_array[bit_pointer]=2;
 			if(Range_w)
-				lcdDispDecSmall(130+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
 			else
-				lcdDispDecSmall(130+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X+50, Num_X+100, Num_Y, Num_Y+50, page) == 0)
 	{
@@ -130,12 +128,12 @@ void button_table(int page){
 	/****************** -3- *********************/
 	if(touchResponse(Num_X+100, Num_X+150, Num_Y, Num_Y+50, page) == 1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if((bit_pointer == 0) && (Range_w)){
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
 		else if((bit_pointer == 0) && (!Range_w)){
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
 		if(bit_pointer <= bit_length-1)
@@ -143,11 +141,11 @@ void button_table(int page){
 			bit_pointer++;
 			bit_array[bit_pointer]=3;
 			if(Range_w)
-				lcdDispDecSmall(130+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
 			else
-				lcdDispDecSmall(130+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X+100, Num_X+150, Num_Y, Num_Y+50, page) == 0)
 	{
@@ -157,12 +155,12 @@ void button_table(int page){
 	/****************** -4- *********************/
 	if(touchResponse(Num_X, Num_X+50, Num_Y+50, Num_Y+100, page) == 1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if((bit_pointer == 0) && (Range_w)){
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
 		else if((bit_pointer == 0) && (!Range_w)){
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
 		if(bit_pointer <= bit_length-1)
@@ -170,11 +168,11 @@ void button_table(int page){
 			bit_pointer++;
 			bit_array[bit_pointer]=4;
 			if(Range_w)
-				lcdDispDecSmall(130+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
 			else
-				lcdDispDecSmall(130+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X, Num_X+50, Num_Y+50, Num_Y+100, page) == 0)
 	{
@@ -184,12 +182,12 @@ void button_table(int page){
 	/****************** -5- *********************/
 	if(touchResponse(Num_X+50, Num_X+100, Num_Y+50, Num_Y+100, page) == 1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if((bit_pointer == 0) && (Range_w)){
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
 		else if((bit_pointer == 0) && (!Range_w)){
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
 		if(bit_pointer <= bit_length-1)
@@ -197,11 +195,11 @@ void button_table(int page){
 			bit_pointer++;
 			bit_array[bit_pointer]=5;
 			if(Range_w)
-				lcdDispDecSmall(130+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
 			else
-				lcdDispDecSmall(130+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X+50, Num_X+100, Num_Y+50, Num_Y+100, page) == 0)
 	{
@@ -211,12 +209,12 @@ void button_table(int page){
 	/****************** -6- *********************/
 	if(touchResponse(Num_X+100, Num_X+150, Num_Y+50, Num_Y+100, page) == 1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if((bit_pointer == 0) && (Range_w)){
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
 		else if((bit_pointer == 0) && (!Range_w)){
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
 		if(bit_pointer <= bit_length-1)
@@ -224,11 +222,11 @@ void button_table(int page){
 			bit_pointer++;
 			bit_array[bit_pointer]=6;
 			if(Range_w)
-				lcdDispDecSmall(130+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
 			else
-				lcdDispDecSmall(130+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X+100, Num_X+150, Num_Y+50, Num_Y+100, page) == 0)
 	{
@@ -238,12 +236,12 @@ void button_table(int page){
 	/****************** -7- *********************/
 	if(touchResponse(Num_X, Num_X+50, Num_Y+100, Num_Y+150, page) == 1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if((bit_pointer == 0) && (Range_w)){
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
 		else if((bit_pointer == 0) && (!Range_w)){
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
 		if(bit_pointer <= bit_length-1)
@@ -251,11 +249,11 @@ void button_table(int page){
 			bit_pointer++;
 			bit_array[bit_pointer]=7;
 			if(Range_w)
-				lcdDispDecSmall(130+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
 			else
-				lcdDispDecSmall(130+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X, Num_X+50, Num_Y+100, Num_Y+150, page) == 0)
 	{
@@ -265,12 +263,12 @@ void button_table(int page){
 	/****************** -8- *********************/
 	if(touchResponse(Num_X+50, Num_X+100, Num_Y+100, Num_Y+150, page) == 1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if((bit_pointer == 0) && (Range_w)){
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
 		else if((bit_pointer == 0) && (!Range_w)){
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
 		if(bit_pointer <= bit_length-1)
@@ -278,11 +276,11 @@ void button_table(int page){
 			bit_pointer++;
 			bit_array[bit_pointer]=8;
 			if(Range_w)
-				lcdDispDecSmall(130+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
 			else
-				lcdDispDecSmall(130+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X+50, Num_X+100, Num_Y+100, Num_Y+150, page) == 0)
 	{
@@ -292,12 +290,12 @@ void button_table(int page){
 	/****************** -9- *********************/
 	if(touchResponse(Num_X+100, Num_X+150, Num_Y+100, Num_Y+150, page) == 1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if((bit_pointer == 0) && (Range_w)){
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
 		else if((bit_pointer == 0) && (!Range_w)){
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
 		if(bit_pointer <= bit_length-1)
@@ -305,11 +303,11 @@ void button_table(int page){
 			bit_pointer++;
 			bit_array[bit_pointer]=9;
 			if(Range_w)
-				lcdDispDecSmall(130+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
 			else
-				lcdDispDecSmall(130+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X+100, Num_X+150, Num_Y+100, Num_Y+150, page) == 0)
 	{
@@ -319,9 +317,32 @@ void button_table(int page){
 	/****************** -ok- *********************/
 	if(touchResponse(Num_X, Num_X+50, Num_Y+150, Num_Y+200, page)==1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
-
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
+		for(int i=1; i <= bit_pointer; i++)
+		{
+			num_output = num_output+bit_array[i]*pow(10,bit_pointer-i);
+			bit_array[i]=0;
+		}
+		bit_pointer = 0;
+		if(Range_w){
+			if(num_output > 20000000){
+				num_output = 20000000;
+				lcdRectClear(126, 425, 198, 437, BACKGROUND);
+				lcdDispDecSmall(129, 425, BLACK, WHITE, num_output);
+			}
+			Range_up_data = num_output;
+			num_output = 0;
+		}
+		else{
+			if(num_output < 10){
+				num_output = 10;
+				lcdRectClear(126, 385, 198, 397, BACKGROUND);
+				lcdDispDecSmall(129, 385, BLACK, WHITE, num_output);
+			}
+			Range_down_data = num_output;
+			num_output = 0;
+		}
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X, Num_X+50, Num_Y+150, Num_Y+200, page)==0)
 	{
@@ -331,12 +352,12 @@ void button_table(int page){
 	/****************** -0- **********************/
 	if(touchResponse(Num_X+50, Num_X+100, Num_Y+150, Num_Y+200, page) == 1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if((bit_pointer == 0) && (Range_w)){
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
 		else if((bit_pointer == 0) && (!Range_w)){
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
 		if(bit_pointer <= bit_length-1)
@@ -344,11 +365,11 @@ void button_table(int page){
 			bit_pointer++;
 			bit_array[bit_pointer]=0;
 			if(Range_w)
-				lcdDispDecSmall(130+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 425, BLACK, WHITE, bit_array[bit_pointer]);
 			else
-				lcdDispDecSmall(130+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
+				lcdDispDecSmall(120+(bit_pointer*9), 385, BLACK, WHITE, bit_array[bit_pointer]);
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X+50, Num_X+100, Num_Y+150, Num_Y+200, page) == 0)
 	{
@@ -358,17 +379,17 @@ void button_table(int page){
 	/***************** -clc- *********************/
 	if(touchResponse(Num_X+100, Num_X+150, Num_Y+150, Num_Y+200, page)==1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		for(int i = 0; i <= bit_pointer; i++)
 		{
 			bit_array[i] = 0;
 		}
 		if(Range_w)
-			lcdRectClear(130, 425, 195, 437, BACKGROUND);
+			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		else
-			lcdRectClear(130, 385, 195, 397, BACKGROUND);
+			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		bit_pointer = 0;
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X+100, Num_X+150, Num_Y+150, Num_Y+200, page) == 0)
 	{
@@ -378,23 +399,28 @@ void button_table(int page){
 	/***************** -mode- ********************/
 	if(touchResponse(Num_X, Num_X+50, Num_Y+210, Num_Y+250, page)==1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if(mode == 0){
 			mode = 1;
+			draw_flag = 1;
 			lcdRectClear(60, 335, 190, 365, BACKGROUND);
 			lcdDispStringSmall(60, 344, RED, WHITE, "Drawing");
+
 		}
 		else if(mode == 1){
 			mode = 2;
+			Troubleshooting = 1;
+			draw_flag = 0;
 			lcdRectClear(60, 335, 190, 365, BACKGROUND);
 			lcdDispStringSmall(60, 344, RED, WHITE, "Error diagnosis");
 		}
 		else{
 			mode = 0;
+			Troubleshooting = 0;
 			lcdRectClear(60, 335, 190, 365, BACKGROUND);
 			lcdDispStringSmall(60, 344, RED, WHITE, "Measuring");
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X, Num_X+50, Num_Y+210, Num_Y+250, page) == 0)
 	{
@@ -404,16 +430,16 @@ void button_table(int page){
 	/***************** -F_L- *********************/
 	if(touchResponse(Num_X+50, Num_X+100, Num_Y+210, Num_Y+250, page)==1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if(Range_w == 1){
-			Range_w = 0;//ÐÞ¸ÄF_LµÄÖµ
+			Range_w = 0;//ä¿®æ”¹F_Lçš„å€¼
 			for(int i = 0; i <= bit_pointer; i++)
 			{
 				bit_array[i] = 0;
 			}
 			bit_pointer = 0;
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X+50, Num_X+100, Num_Y+210, Num_Y+250, page) == 0)
 	{
@@ -423,16 +449,16 @@ void button_table(int page){
 	/***************** -F_H- *********************/
 	if(touchResponse(Num_X+100, Num_X+150, Num_Y+210, Num_Y+250, page)==1)
 	{
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªBegin*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”Begin*/
 		if(!Range_w){
-			Range_w = 1;//ÐÞ¸ÄF_H
+			Range_w = 1;//ä¿®æ”¹F_H
 			for(int i = 0; i <= bit_pointer; i++)
 			{
 				bit_array[i] = 0;
 			}
 			bit_pointer = 0;
 		}
-		/*°´¼ü¹¦ÄÜ¶¨ÒåÇø¡ª¡ªEnd*/
+		/*æŒ‰é”®åŠŸèƒ½å®šä¹‰åŒºâ€”â€”End*/
 	}
 	else if(touchResponse(Num_X+100, Num_X+150, Num_Y+210, Num_Y+250, page) == 0)
 	{
