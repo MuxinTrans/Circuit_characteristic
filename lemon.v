@@ -183,8 +183,8 @@ module lemon
 	
 	// DAC904
 	assign GPIO_PB[14:1] = Sin_out[13:0];	//输出给904
-	//assign CLK_OUT = CLK_100M;
-	assign CLK_OUT = CLK_sample;
+	assign CLK_OUT = CLK_100M;
+	//assign CLK_OUT = CLK_sample;
 	
 ////////////////////////////ADS805：读取输入信号（采样时钟）并获得最大值//////////////////////////////
 	
@@ -198,9 +198,10 @@ module lemon
 	
 	
 	assign Data_in = GPIO_PD[13:2];
-	//assign GPIO_PA[0] = CLK_sample;	//由于采样频率可变，因此采样时钟单独给805
+	assign GPIO_PC[0] = CLK_sample;	//由于采样频率可变，因此采样时钟单独给805
+	assign GPIO_PA[0] = CLK_sample;	//测试时钟
 	
-	DDS1 CLKsample		//小于100k实时采样，大于100k等效采样
+	DDS1 CLKsample				//小于100k实时采样，大于100k等效采样
 	(
 		.clk(CLK_100M) ,		// input  clk_sig
 		.rst_n(RST_N) ,		// input  rst_n_sig
@@ -238,10 +239,10 @@ module lemon
 		switch_reg <= switch;
 	end
 	
-	assign GPIO_PB[0]  = switch_reg[0];	//switch1-输入出R1:0接1短--1
-	assign GPIO_PC[0]  = switch_reg[1];	//switch2-电子开关1:0高1低--4
-	assign GPIO_PD[15] = switch_reg[2];	//switch3-电子开关2:0入1出--2
-	assign GPIO_PC[1]  = switch_reg[3];	//switch4-输出处R2:0接1断--3
+	assign GPIO_PB[0]  = ~switch_reg[0];//switch1-输入出R1:0接1短--1
+	assign GPIO_PC[1]  = ~switch_reg[1];//switch2-电子开关1:0高1低--4
+	assign GPIO_PD[15] = ~switch_reg[2];//switch3-电子开关2:0入1出--2
+	assign GPIO_PC[2]  =  switch_reg[3];//switch4-输出处R2:0接1断--3
 	
 /////////////////////////////////////ADS1118///////////////////////////////////////////////
 
