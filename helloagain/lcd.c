@@ -450,7 +450,7 @@ void lcdDispNumtable(int Num_X,int Num_Y){//按键绘制代码
 	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+100,Num_Y+150,BLACK, "  9");
 	lcddrawsqur(Num_X,Num_X+50,Num_Y+150,Num_Y+200,BLACK, " ok");
 	lcddrawsqur(Num_X+50,Num_X+100,Num_Y+150,Num_Y+200,BLACK, "  0");
-	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+150,Num_Y+200,BLACK, " del");
+	lcddrawsqur(Num_X+100,Num_X+150,Num_Y+150,Num_Y+200,BLACK, " clc");
 
 	lcddrawsqur(Num_X,Num_X+50,Num_Y+210,Num_Y+250,'black', "Mode");//0测量模式	/1绘图模式		/2诊断模式
 	lcddrawsqur(Num_X+50,Num_X+100,Num_Y+210,Num_Y+250,'black', "F_L");
