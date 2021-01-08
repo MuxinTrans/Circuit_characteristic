@@ -18,8 +18,10 @@ extern char TouchValue;
 extern int model;
 extern int pause1;
 
-extern int mode, Range_up, Range_down;
+extern int mode, Range_w;
 extern int Num_X, Num_Y;
+extern double Range_up_data, Range_down_data;
+int Troubleshooting,draw_flag;
 
 enum FT_REG {
 	FT_DEV_MODE = 0x00,
