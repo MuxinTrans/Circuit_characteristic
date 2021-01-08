@@ -19,49 +19,47 @@
 #include "ctrl.h"
 #include "system.h"
 #include "math.h"
-/*
-#define Res1 10	//R_in²Î¿¼µç×è
-#define Res2 1
-#define Av 99	//ÒÇ±í·Å´óÆ÷·Å´óÖµ
-#define Aver_time 15 //¶à´Î²âÁ¿È¡Æ½¾ùÖµ
-#define FS 4096	//ADS1118ãĞÖµ£¬Êµ¼ÊÖµÎª4.096V
+#include "touch.h"
 
-int begin_flag,end_flag=0;
-int draw_flag,stop_flag;
-int draw_end = 1, storge_end;
-double Rang_down_data,Rang_up_data;
-int KW_word,FRE_word;	//KW_word:É¨ÆµĞÅºÅÆµÂÊ¿ØÖÆ×Ö£»FRE_word:²ÉÑùÊ±ÖÓÆµÂÊ¿ØÖÆ×Ö
+#define Res1 10	//R_inå‚è€ƒç”µé˜»--103=10*10^3
+#define Res2 2.2//R_outå‚è€ƒç”µé˜»--222=22*10^2
+#define Av 99	//ä»ªè¡¨æ”¾å¤§å™¨æ”¾å¤§å€¼
+#define Aver_time 15 //å¤šæ¬¡æµ‹é‡å–å¹³å‡å€¼
+#define FS 4096	//ADS1118é˜ˆå€¼ï¼Œå®é™…å€¼ä¸º4.096V
+
+int end_flag, draw_end, storge_end;
+int KW_word, FRE_word;	//KW_word:æ‰«é¢‘ä¿¡å·é¢‘ç‡æ§åˆ¶å­—ï¼›FRE_word:é‡‡æ ·æ—¶é’Ÿé¢‘ç‡æ§åˆ¶å­—
 int Times;
 double fre_control;
-double U_A,U_A_total,U_B,U_B_total,U_1,U_1_total,U_2,U_2_total;
-double U_inf_total,U_0_total,U_r_total;
-double R_in,R_out;
+double U_A, U_A_total = 0, U_B, U_B_total = 0, U_1, U_1_total = 0, U_2, U_2_total = 0;
+double U_inf_total = 0, U_0_total = 0, U_r_total = 0;
+double R_in, R_out;
 double Gain;
 int Round_U1 = 0,Round_U2;
-*/
+
 /*
- * U_AÊäÈë²Î¿¼µç×è¶Ì½ÓËùµÃµÄÊä³ö---in
- * U_BÊäÈë²Î¿¼µç×è½ÓÈëËùµÃµÄÊä³ö---in
- * U_1Êä³ö²Î¿¼µç×è¶ÏÂ·ËùµÃµÄÊä³ö---out
- * U_2Êä³ö²Î¿¼µç×è½ÓÈëËùµÃµÄÊä³ö---out
+ * U_Aè¾“å…¥å‚è€ƒç”µé˜»çŸ­æ¥æ‰€å¾—çš„è¾“å‡º---in
+ * U_Bè¾“å…¥å‚è€ƒç”µé˜»æ¥å…¥æ‰€å¾—çš„è¾“å‡º---in
+ * U_1è¾“å‡ºå‚è€ƒç”µé˜»æ–­è·¯æ‰€å¾—çš„è¾“å‡º---out
+ * U_2è¾“å‡ºå‚è€ƒç”µé˜»æ¥å…¥æ‰€å¾—çš„è¾“å‡º---out
  * U_inf = U_1;U_0 = U_A;U_r = U_B;
  */
-/*
-int Troubleshooting;
+
 int rda_end = 129;
 double max_of_Vpp = -100;
-double fre_cut,fre_range;
-float Vpp_pf[600],fre_trans_pf[600],fre_pf[600];
+double fre_cut, fre_range;
+float Vpp_pf[600], fre_trans_pf[600], fre_pf[600];
 
 double getVpp(double vrd);
 int Sweep(int Rang_down,int Rang_up);
-void Paint_V_f(float fre_sweep,int Range_down,int Range_up);*/
+void Paint_V_f(float fre_sweep,int Range_down,int Range_up);
 void dis_init();
-/*
+void io_init();
+void flag_init();
 double getVdc(u16 AD_value);
 void getRin();
 void getKw(double fre);
-*/
+
 
 int main() {
 	if (deviceInit() < 0) {
@@ -70,109 +68,118 @@ int main() {
 	}
 	lcdRectClear(0, 0, 799, 479, WHITE);
 	dis_init();
-/*	fre_control = 1000;
-	Rang_down_data=10.0;
-	Rang_up_data=1000000.0;//1M
-	IOWR(SWITCH_4WIRE_BASE,0,0);
+	io_init();
+	flag_init();
+	Range_down_data = 10.0;
+	Range_up_data = 1000000.0;//1M
 
-	Troubleshooting = 0;
-	stop_flag = 1;
-*/
-	printf("Finish Initial\n");
+	printf("Finish Initial!\n");
 
-	//ºËĞÄ´úÂë
 	while (1)
 	{
 		/*
-		if(!Troubleshooting && stop_flag){
-			IOWR(SWITCH_4WIRE_BASE,0,0);//¼ÌµçÆ÷0000
+		//æ‰«é¢‘è¾“å‡ºæµ‹è¯•---ç›´æ¥ç”¨DAC904æµ‹é‡è¾“å‡º
+		Sweep(Range_down_data,Range_up_data);
+		*/
+
+		//1kHz DDSä¿¡å·æµ‹è¯•---ç›´æ¥ç”¨DAC904æµ‹é‡è¾“å‡º
+		//Vppæµ‹è¯•æµ‹è¯•---ç›´æ¥ç”¨ADS805æµ‹è¯•--ä¿¡å·æºè¾“å…¥ä¸º1kHzï¼Ÿ---æ³¨æ„ADS805çš„é‡‡æ ·æ—¶é’Ÿçš„è¾“å‡º
+		while(!IORD(VPP_FOUND_BASE,0));
+		U_1 = getVpp(IORD(VPP_BASE,0));
+		U_1_total = U_1_total + U_1;
+		Round_U2++;
+		if(Round_U2 == Aver_time){
+			lcdRectClear(500, 100, 600, 120, WHITE);
+			lcdDispFloatSmall(500, 100, BLACK, WHITE, U_1_total/Round_U2);
+			U_1_total = 0;Round_U2=0;
+		}
+
+		/*
+		if(!Troubleshooting){
+			IOWR(SWITCH_4WIRE_BASE,0,0);//ç»§ç”µå™¨0000
 			usleep(80000);
 			getKw(fre_control);
 
-			//R_in²âÁ¿
-			getRin();//±ÈÔ­À´µÄ¶àÁËÒ»ĞĞ¼ÌµçÆ÷¶¨Òå
+			//R_inæµ‹é‡
+			getRin();//æ¯”åŸæ¥çš„å¤šäº†ä¸€è¡Œç»§ç”µå™¨å®šä¹‰
 			lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
 
-			//R_out²âÁ¿
-			IOWR(SWITCH_4WIRE_BASE,0,4); //¼ÌµçÆ÷0100
+			//R_outæµ‹é‡
+			IOWR(SWITCH_4WIRE_BASE,0,4); //ç»§ç”µå™¨0100
 			usleep(60000);
 			while(!IORD(VPP_FOUND_BASE,0));
 			U_1 = getVpp(IORD(VPP_BASE,0));
 			U_1_total = U_1_total + U_1;
 
-			IOWR(SWITCH_4WIRE_BASE,0,12);//¼ÌµçÆ÷1100
+			IOWR(SWITCH_4WIRE_BASE,0,12);//ç»§ç”µå™¨1100
 			usleep(60000);
 			while(!IORD(VPP_FOUND_BASE,0));
 			U_2 = getVpp(IORD(VPP_BASE,0));
 			U_2_total = U_2_total + U_2;
 			Round_U2++;
 			if(Round_U2 == Aver_time){
-				R_out = (fabs(U_1_total-U_2_total)/U_2_total)*Res2;
+				R_out = (fabs((U_1_total-U_2_total)/U_2_total))*Res2;
 				U_inf_total = U_1_total;
 				lcdDispFloatSmall(383, 319, BLACK, WHITE, R_out);
 				Round_U2 = 0;U_1_total = 0;U_2_total = 0;
 
-				//Gain²âÁ¿
+				//Gainæµ‹é‡
 				Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
 				lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);
 
-				//ÉÏÏŞÆµÂÊ²âÁ¿ && ·ùÆµÌØĞÔ»æÖÆ
+				//ä¸Šé™é¢‘ç‡æµ‹é‡ && å¹…é¢‘ç‰¹æ€§ç»˜åˆ¶
 				if(draw_flag){
 					end_flag = 0;
-					lcdDrawGrid(260, 50, 10, 28, 18, LGRAY);
 					lcdRectClear(260, 40, 764, 230, BACKGROUND);
-					Sweep(Rang_down_data,Rang_up_data);
+					lcdDrawGrid(260, 50, 10, 28, 18, LGRAY);
+					Sweep(Range_down_data,Range_up_data);
 
-					while(!IORD(VPP_FOUND_BASE,0));
-					U_2 = getVpp(IORD(VPP_BASE,0));
-					Gain = U_2/22.246;
-
-					IOWR(SWITCH_4WIRE_BASE,0,0);//¼ÌµçÆ÷0000
+					IOWR(SWITCH_4WIRE_BASE,0,0);//ç»§ç”µå™¨0000
 					usleep(70000);
 				}
 			}
 		}
 
-		//·¢»Ó¹¦ÄÜ
-		else if(Troubleshooting && stop_flag){
-			//µÍÍ¨²¿·Ö£¬Ö±Á÷¼ì²â£¨Éèfre=1000Hz;
-			IOWR(SWITCH_4WIRE_BASE,0,2);//¼ÌµçÆ÷0010
+		//å‘æŒ¥åŠŸèƒ½
+		else{
+			//ä½é€šéƒ¨åˆ†ï¼Œç›´æµæ£€æµ‹ï¼ˆè®¾fre=1000Hz;
+			IOWR(SWITCH_4WIRE_BASE,0,2);//ç»§ç”µå™¨0010
 			usleep(80000);
 			fre_control = 1000;
 			getKw(fre_control);
 			usleep(750000);
-			double V_DC = getVdc(IORD(DOUT_BASE, 0));	//µ¥Î»£ºmV
+			double V_DC = getVdc(IORD(DOUT_BASE, 0));	//å•ä½ï¼šmV
 			lcdDispFloatSmall(525, 310, NAVY, WHITE, V_DC);
-*/
+
 			/*
-			 * V_DCÕı³£µçÑ¹£º
-			 * Òì³£µçÑ¹¡¾µç×è¹ÊÕÏ¡¿£º
-			 * R1¶Ï¡¢R2¶Ì¡¢R4¶Ï£º		|| R1-R_in=15k | R2-R_in=0 | R4-R_in = 10.8k
-			 * R1¶Ì¡¢R3¶Ì£º			|| R1-R_in=0 | R3-R_in=R_in
-			 * R2¶Ï£º
-			 * R3¶Ï£º
-			 * R4¶Ï£º
+			 * V_DCæ­£å¸¸ç”µå‹ï¼š
+			 * å¼‚å¸¸ç”µå‹ã€ç”µé˜»æ•…éšœã€‘ï¼š
+			 * R1æ–­ã€R2çŸ­ã€R4æ–­ï¼š		|| R1-R_in=15k | R2-R_in=0 | R4-R_in = 10.8k
+			 * R1çŸ­ã€R3çŸ­ï¼š			|| R1-R_in=0 | R3-R_in=R_in
+			 * R2æ–­ï¼š
+			 * R3æ–­ï¼š
+			 * R4æ–­ï¼š
 			 */
 /*
-			if(V_DC > 2100 || (V_DC < 1500 && V_DC > 5)){//µçÑ¹²»Õı³££¬µç×è¹ÊÕÏ
-				if(V_DC < 1200 && V_DC > 800){//µäĞÍÖµ£º1000¡ª¡ªR2¶ÏÂ·
+			if(V_DC > 2100 || (V_DC < 1500 && V_DC > 5)){//ç”µå‹ä¸æ­£å¸¸ï¼Œç”µé˜»æ•…éšœ
+				if(V_DC < 1200 && V_DC > 800){//å…¸å‹å€¼ï¼š1000â€”â€”R2æ–­è·¯
 					lcdDispStringBig(560, 363, NAVY, WHITE, "R2");
 					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
 				}
-				else if(V_DC < 300 && V_DC > 200){//µäĞÍÖµ£º250¡ª¡ªR3¶ÏÂ·
+				else if(V_DC < 300 && V_DC > 200){//å…¸å‹å€¼ï¼š250â€”â€”R3æ–­è·¯
 					lcdDispStringBig(560, 363, NAVY, WHITE, "R3");
 					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
 				}
-				else if(V_DC < 50 && V_DC > 5){//µäĞÍÖµ£º10¡ª¡ªR4¶ÌÂ·
+				else if(V_DC < 50 && V_DC > 5){//å…¸å‹å€¼ï¼š10â€”â€”R4çŸ­è·¯
 					lcdDispStringBig(560, 363, NAVY, WHITE, "R4");
 					lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
 				}
-				else if(V_DC < 3200 && V_DC > 2900){//µäĞÍÖµ£º3000¡ª¡ªR1¶Ì||R3¶Ì
+				else if(V_DC < 3200 && V_DC > 2900){//å…¸å‹å€¼ï¼š3000â€”â€”R1çŸ­||R3çŸ­
 					getRin();
-//					lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
+					lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);////////////////////////////////////////////
 
 					double R_in_ref = R_in*10;
-				    if(R_in_ref < 2.5 && R_in_ref > 0.5){//µäĞÍÖµ:0.14¡ª¡ªR1¶ÌÂ·
+				    if(R_in_ref < 2.5 && R_in_ref > 0.5){//å…¸å‹å€¼:0.14â€”â€”R1çŸ­è·¯
 						lcdDispStringBig(560, 363, NAVY, WHITE, "R1");
 						lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
 						R_in_ref = 0;
@@ -183,53 +190,52 @@ int main() {
 						R_in_ref = 0;
 				    }
 				}
-				else if(V_DC < 2900 && V_DC > 2500){//µäĞÍÖµ£º2800¡ª¡ªR1¶Ï|R2¶Ì|R4¶Ï
+				else if(V_DC < 2900 && V_DC > 2500){//å…¸å‹å€¼ï¼š2800â€”â€”R1æ–­|R2çŸ­|R4æ–­
 					getRin();
-//					lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
+					lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);//////////////////////////////////////////////
 
-				    if(R_in < 0.25 && R_in > 0.05){//µäĞÍÖµ:0.14¡ª¡ªR2¶ÌÂ·
+				    if(R_in < 0.25 && R_in > 0.05){//å…¸å‹å€¼:0.14â€”â€”R2çŸ­è·¯
 						lcdDispStringBig(560, 363, NAVY, WHITE, "R2");
 						lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
 					}
-				    else if(R_in < 16.5 && R_in > 13.5){//µäĞÍÖµ£º15¡ª¡ªR1¶ÏÂ·
+				    else if(R_in < 16.5 && R_in > 13.5){//å…¸å‹å€¼ï¼š15â€”â€”R1æ–­è·¯
 						lcdDispStringBig(560, 363, NAVY, WHITE, "R1");
 						lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
 				    }
-				    else if(R_in < 1.5 && R_in > 0.5){//µäĞÍÖµ£º0.8¡ª¡ªR4¶ÏÂ·
+				    else if(R_in < 1.5 && R_in > 0.5){//å…¸å‹å€¼ï¼š0.8â€”â€”R4æ–­è·¯
 						lcdDispStringBig(560, 363, NAVY, WHITE, "R4");
 						lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
 				    }
 				}
 			}
 
-			else{//µçÈİ´íÎóÅĞ¶Ï
-			*/
+			else{//ç”µå®¹é”™è¯¯åˆ¤æ–­
 				/*
-				 * C1¶Ï-R_in=¡Ş|C1Ë«-µÍÆµÇé¿öÏÂ£¬R_inÔö´ó
-				 * C2¶Ï-G=2.41|C2Ë«-µÍÆµÇé¿öÏÂ£¬GÔö´ó
-				 * C3¶Ï-¸ßÆµÇé¿öÏÂ£¬GÔö´ó|C3Ë«-¸ßÆµÇé¿öÏÂ£¬G¼õĞ¡
+				 * C1æ–­-R_in=âˆ|C1åŒ-ä½é¢‘æƒ…å†µä¸‹ï¼ŒR_inå¢å¤§
+				 * C2æ–­-G=2.41|C2åŒ-ä½é¢‘æƒ…å†µä¸‹ï¼ŒGå¢å¤§
+				 * C3æ–­-é«˜é¢‘æƒ…å†µä¸‹ï¼ŒGå¢å¤§|C3åŒ-é«˜é¢‘æƒ…å†µä¸‹ï¼ŒGå‡å°
 				 */
 /*				getRin();
-//				lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
+				lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);//////////////////////////////////////
 
-				if(R_in > 400){//µäĞÍÖµ£º¡Ş¡ª¡ªC1¶Ï
+				if(R_in > 400){//å…¸å‹å€¼ï¼šâˆâ€”â€”C1æ–­
 					lcdDispStringBig(560, 363, NAVY, WHITE, "C1");
 					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
 				}
-				else if(R_in < 12 && R_in > 8){//µäĞÍÖµ£º10.1£¿¡ª¡ªC2¶Ï
+				else if(R_in < 12 && R_in > 8){//å…¸å‹å€¼ï¼š10.1ï¼Ÿâ€”â€”C2æ–­
 					lcdDispStringBig(560, 363, NAVY, WHITE, "C2");
 					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
 				}
 				else{
-					//¸ßÆµÇé¿ö£ºC3¶Ï|C3Ë«
-					IOWR(SWITCH_4WIRE_BASE,0,0);//¼ÌµçÆ÷0000
+					//é«˜é¢‘æƒ…å†µï¼šC3æ–­|C3åŒ
+					IOWR(SWITCH_4WIRE_BASE,0,0);//ç»§ç”µå™¨0000
 					usleep(50000);
 					fre_control = 100000;//100k
 					getKw(fre_control);
 					usleep(10000);
 					getRin();
 
-					IOWR(SWITCH_4WIRE_BASE,0,4); //¼ÌµçÆ÷0100
+					IOWR(SWITCH_4WIRE_BASE,0,4); //ç»§ç”µå™¨0100
 					usleep(60000);
 					while(!IORD(VPP_FOUND_BASE,0));
 					U_1 = getVpp(IORD(VPP_BASE,0));
@@ -239,19 +245,19 @@ int main() {
 						U_inf_total = U_1_total;
 						Round_U2 = 0;U_1_total = 0;
 						Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
-//						lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);
+						lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);////////////////////////////////////
 					}
 
-					if(Gain > 150 && Gain < 180){//µäĞÍÖµ£º160-C3¶Ï
+					if(Gain > 150 && Gain < 180){//å…¸å‹å€¼ï¼š160-C3æ–­
 						lcdDispStringBig(560, 363, NAVY, WHITE, "C3");
 						lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
 					}
-					else if(Gain < 100 && Gain > 85){//µäĞÍÖµ£º80-C3Ë«±¶
+					else if(Gain < 100 && Gain > 85){//å…¸å‹å€¼ï¼š80-C3åŒå€
 						lcdDispStringBig(560, 363, NAVY, WHITE, "C3");
 						lcdDispStringBig(663, 363, NAVY, WHITE, "Double");
 					}
 					else{
-						//µÍÆµÇé¿ö£ºC1Ë«|C2Ë«
+						//ä½é¢‘æƒ…å†µï¼šC1åŒ|C2åŒ
 						fre_control = 100;
 						getKw(fre_control);
 						usleep(50000);
@@ -259,7 +265,7 @@ int main() {
 						R_in_before = R_in;
 						getRin();
 
-						IOWR(SWITCH_4WIRE_BASE,0,4); //¼ÌµçÆ÷0100
+						IOWR(SWITCH_4WIRE_BASE,0,4); //ç»§ç”µå™¨0100
 						usleep(60000);
 						while(!IORD(VPP_FOUND_BASE,0));
 						U_1 = getVpp(IORD(VPP_BASE,0));
@@ -269,20 +275,20 @@ int main() {
 							U_inf_total = U_1_total;
 							Round_U2 = 0;U_1_total = 0;
 							Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
-	//						lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);
+							lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);////////////////////////////////////
 						}
 
-						if(Gain > 80 && Gain < 110){//µäĞÍÖµ£º105-C2Ë«±¶
+						if(Gain > 80 && Gain < 110){//å…¸å‹å€¼ï¼š105-C2åŒå€
 							lcdDispStringBig(560, 363, NAVY, WHITE, "C2");
 							lcdDispStringBig(663, 363, NAVY, WHITE, "Double");
 						}
 						else{
-							if((R_in - R_in_before) > 5){//R_inÔö´ó-C1Ë«±¶
+							if((R_in - R_in_before) > 5){//R_inå¢å¤§-C1åŒå€
 								lcdDispStringBig(560, 363, NAVY, WHITE, "C1");
 								lcdDispStringBig(663, 363, NAVY, WHITE, "Double");
 							}
 							else{
-								//Õı³£Çé¿ö
+								//æ­£å¸¸æƒ…å†µ
 								lcdRectClear(560, 363, 590, 390, WHITE);
 								lcdDispStringBig(663, 363, NAVY, WHITE, "Normal");
 							}
@@ -296,7 +302,7 @@ int main() {
 	return 0;
 }
 
-/********************************************ÆÁÄ»»æÖÆº¯Êı*********************************************************/
+/********************************************å±å¹•ç»˜åˆ¶å‡½æ•°*********************************************************/
 
 void dis_init(){
 	lcdDispNumtable(Num_X, Num_Y);
@@ -334,31 +340,51 @@ void dis_init(){
 	lcdDispStringBig(550, 263, BLACK, WHITE, "Error Diagnosis");
 }
 
-/*******************************************É¨ÆµĞÅºÅ²úÉúº¯Êı*******************************************************/
-/*
-int Sweep(int Rang_down,int Rang_up){
-	float freq_sweep = Rang_down - 20;
-    IOWR(SWITCH_4WIRE_BASE,0,5);	//¼ÌµçÆ÷0101
+/********************************************IOéƒ¨åˆ†åˆå§‹åŒ–********************************************************/
 
-    while(!end_flag){//ÔİÊ±Íê³ÉÉ¨ÆµĞÅºÅµÄ²úÉúÓëÉ¨ÆµĞÅºÅ¶ÔÓ¦µÄÆµÂÊ¿ØÖÆ×Ö¡¢805²ÉÑùÊ±ÖÓ¿ØÖÆ×Ö
-        IOWR(SWITCH_4WIRE_BASE,0,5);//¼ÌµçÆ÷0101
+void io_init(){
+	fre_control = 1000;
+	getKw(fre_control);
+	IOWR(SWITCH_4WIRE_BASE,0,0);
+}
+
+/********************************************æ ‡å¿—ä½åˆå§‹åŒ–*********************************************************/
+
+void flag_init(){
+	Troubleshooting = 0;
+	end_flag = 0;
+	draw_flag = 0;
+	draw_end = 1;
+	Range_w = 0;//ä¿®æ”¹F_L
+	mode = 0;//æµ‹é‡æ¨¡å¼
+	lcdDispStringSmall(60, 344, RED, WHITE, "Measuring");
+}
+
+/*******************************************æ‰«é¢‘ä¿¡å·äº§ç”Ÿå‡½æ•°*******************************************************/
+
+int Sweep(int Rang_down,int Rang_up){
+	float freq_sweep = Rang_down;
+    IOWR(SWITCH_4WIRE_BASE,0,5);	//ç»§ç”µå™¨0101
+
+    while(!end_flag){
+        IOWR(SWITCH_4WIRE_BASE,0,5);//ç»§ç”µå™¨0101
 		if(freq_sweep <= 200)							//0~200
 		{
-			freq_sweep = freq_sweep + 30;
+			freq_sweep = freq_sweep+30;
       	}
         else if(freq_sweep <= 1000 && freq_sweep > 200)	//200~1000
         {
-           	freq_sweep = freq_sweep + 200;
+           	freq_sweep = freq_sweep+200;
         }
         else if(freq_sweep <= 50000 && freq_sweep > 1000)//1k~50k
         {
-			freq_sweep = freq_sweep + 1000;
+			freq_sweep = freq_sweep+1000;
 		}
 		else if(freq_sweep <= 100000 && freq_sweep>50000)//50k~100k
 		{
 			freq_sweep = freq_sweep+2000;
 		}
-		else if(freq_sweep <= Rang_up && freq_sweep > 100000)	 //100k~ÉÏÏŞ
+		else if(freq_sweep <= Rang_up && freq_sweep > 100000)	 //100k~ä¸Šé™
 		{
 			freq_sweep = freq_sweep + 20000;
 		}
@@ -366,7 +392,6 @@ int Sweep(int Rang_down,int Rang_up){
 		{
 			freq_sweep = Rang_down;
 		}
-
 		getKw(freq_sweep);
 
 		usleep(60000);
@@ -374,36 +399,37 @@ int Sweep(int Rang_down,int Rang_up){
     }
     return 0;
 }
-*/
-/******************************************R_in²âÁ¿º¯Êı*********************************************************/
-/*
+
+/******************************************R_inæµ‹é‡å‡½æ•°*********************************************************/
+
 void getRin(){
-	IOWR(SWITCH_4WIRE_BASE,0,0);//¼ÌµçÆ÷0000
+	IOWR(SWITCH_4WIRE_BASE,0,0);//ç»§ç”µå™¨0000
+	usleep(80000);
 	while(!IORD(VPP_FOUND_BASE,0));
 	U_B = getVpp(IORD(VPP_BASE,0));
 	U_B_total = U_B_total + U_B;
 
-	IOWR(SWITCH_4WIRE_BASE,0,1);//¼ÌµçÆ÷0001
+	IOWR(SWITCH_4WIRE_BASE,0,1);//ç»§ç”µå™¨0001
 	usleep(60000);
 	while(!IORD(VPP_FOUND_BASE,0));
 	U_A = getVpp(IORD(VPP_BASE,0));
 	U_A_total = U_A_total + U_A;
 	Round_U1++;
 	if(Round_U1 == Aver_time){
-		R_in = (fabs(U_A_total-U_B_total)/U_B_total)*Res1;
+		R_in = (fabs((U_A_total-U_B_total)/U_B_total))*Res1;
 		U_0_total = U_A_total;U_r_total = U_B_total;
 //		lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
 		Round_U1 = 0;U_A_total = 0;U_B_total = 0;
 	}
 }
-*/
-/****************************************ÆµÂÊ¿ØÖÆ×Ö»ñµÃº¯Êı********************************************************/
-/*
+
+/****************************************é¢‘ç‡æ§åˆ¶å­—è·å¾—å‡½æ•°********************************************************/
+
 void getKw(double fre){
-	//É¨ÆµĞÅºÅÆµÂÊ¿ØÖÆ×Ö
+	//æ‰«é¢‘ä¿¡å·é¢‘ç‡æ§åˆ¶å­—
 	KW_word = (fre*pow(2,32))/100000000;
 	IOWR(FRE_OUT_KW_BASE,0,KW_word);
-	//ADS805²ÉÑùÊ±ÖÓÆµÂÊ¿ØÖÆ×Ö
+	//ADS805é‡‡æ ·æ—¶é’Ÿé¢‘ç‡æ§åˆ¶å­—
 	if(fre >= 100000){
 		FRE_word = (1/(1/fre+pow(10,-8))*pow(2,32))/100000000;
 		IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
@@ -417,20 +443,19 @@ void getKw(double fre){
 		Times = 200;
 		IOWR(TIMES_BASE,0,Times);
 	}
-
 }
-*/
-/****************************************·ùÆµÌØĞÔÇúÏß»æÖÆº¯Êı*******************************************************/
-/*
+
+/****************************************å¹…é¢‘ç‰¹æ€§æ›²çº¿ç»˜åˆ¶å‡½æ•°*******************************************************/
+
 void Paint_V_f(float fre_sweep,int Range_down,int Range_up){
 	int rdaddress = 0;
-	while(!IORD(VPP_FOUND_BASE,0));
+	while(!IORD(VPP_FOUND_BASE,0));//ç»§ç”µå™¨0101
 	double addata_in = getVpp(IORD(VPP_BASE,0));
 
-	//Ñ°ÕÒ½ØÖ¹ÆµÂÊµã+´æ´¢Êı¾İ×¼±¸»æÍ¼
+	//å¯»æ‰¾æˆªæ­¢é¢‘ç‡ç‚¹+å­˜å‚¨æ•°æ®å‡†å¤‡ç»˜å›¾
 	if(draw_end){
 		Vpp_pf[rdaddress] = addata_in;
-		fre_trans_pf[rdaddress] = 95*log10(fre_sweep)+16;//·Ç¾ùÔÈÁ¿»¯
+		fre_trans_pf[rdaddress] = 95*log10(fre_sweep)+16;//éå‡åŒ€é‡åŒ–
 		fre_pf[rdaddress] = fre_sweep;
 		rdaddress++;
 
@@ -454,11 +479,11 @@ void Paint_V_f(float fre_sweep,int Range_down,int Range_up){
 		storge_end = 0;
 		draw_end = 0;
 		fre_range = (95*log10(Range_up)+16)-(95*log10(Range_down)+16);
-		for(int i=0; i < rda_end-1; i++){
-			// Vpp_draw[i] = 250-200*Vpp_pf[i]/max_of_Vpp--y
+		for(int i = 0; i < rda_end-1; i++){
+			// Vpp_draw[i] = 230-180*Vpp_pf[i]/max_of_Vpp--y
 			// fre_draw[i] = 764-504*fre_trans_pf[i]/fre_range--x
 			if(Vpp_pf[i+1] >= 0){
-				lcdDrawLine(764-504*fre_trans_pf[i]/fre_range, 250-200*Vpp_pf[i]/max_of_Vpp, 764-504*fre_trans_pf[i+1]/fre_range, 250-200*Vpp_pf[i+1]/max_of_Vpp, BLACK);
+				lcdDrawLine(764-504*fre_trans_pf[i]/fre_range, 230-180*Vpp_pf[i]/max_of_Vpp, 764-504*fre_trans_pf[i+1]/fre_range, 230-180*Vpp_pf[i+1]/max_of_Vpp, BLACK);
 			}
 		}
 		draw_end = 1;
@@ -466,27 +491,27 @@ void Paint_V_f(float fre_sweep,int Range_down,int Range_up){
 		max_of_Vpp = -100;
 	}
 }
-*/
-/*************************************½«ADS805¶ÁÈ¡µ½µÄÖµ×ª»¯ÎªÕæÊµµçÑ¹Öµ*****************************************************/
-/*
+
+/*************************************å°†ADS805è¯»å–åˆ°çš„å€¼è½¬åŒ–ä¸ºçœŸå®ç”µå‹å€¼*****************************************************/
+
 double getVpp(double vrd){
 	double vin;
 	vin = vrd * 1.312-1.323;
+//	vin = vrd;
 	return vin;
 }
-*/
-/****************************************½«ADS1118²Éµ½µÄÖµ±ä³ÉµçÑ¹/mV*******************************************************/
-/*
+
+/****************************************å°†ADS1118é‡‡åˆ°çš„å€¼å˜æˆç”µå‹/mV*******************************************************/
+
 double getVdc(u16 AD_value){
-    //FSÊÇÖ¸µçÑ¹µÈ¼¶
+    //FSæ˜¯æŒ‡ç”µå‹ç­‰çº§
     double AD_Voltage;
     if(AD_value>=0x8000)
     {
-    	AD_value=0xFFFF-AD_value;//°Ñ0xFFFF¸Ä³É0x10000
+    	AD_value=0xFFFF-AD_value;//æŠŠ0xFFFFæ”¹æˆ0x10000
         AD_Voltage=(-1.0)*((AD_value*FS/0x8000));
     }
     else
     	AD_Voltage=(1.0)*((AD_value*FS/32768));
     return AD_Voltage;
 }
-*/
