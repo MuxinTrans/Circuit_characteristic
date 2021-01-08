@@ -21,8 +21,8 @@
 #include "math.h"
 #include "touch.h"
 
-#define Res1 10	//R_in参考电阻
-#define Res2 1
+#define Res1 10	//R_in参考电阻--103=10*10^3
+#define Res2 2.2//R_out参考电阻--222=22*10^2
 #define Av 99	//仪表放大器放大值
 #define Aver_time 15 //多次测量取平均值
 #define FS 4096	//ADS1118阈值，实际值为4.096V
