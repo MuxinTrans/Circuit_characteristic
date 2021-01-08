@@ -18,6 +18,9 @@ extern char TouchValue;
 extern int model;
 extern int pause1;
 
+extern int mode, Range_up, Range_down;
+extern int Num_X, Num_Y;
+
 enum FT_REG {
 	FT_DEV_MODE = 0x00,
 	FT_GEST_ID = 0x01,
@@ -74,6 +77,10 @@ void touchIsr(void* isr_context);
 void touchGetData(tcdata *data);
 void touchGetRaw(tcdata *data);
 
+int touchResponse(int x_low, int x_high, int y_low, int y_high, int page);
+int button_show(int x_low,int y_low, const char*str,int page);
+void Button_selet();
+void button_table(int page);
 
 u8 touchGetGesture(void);
 
