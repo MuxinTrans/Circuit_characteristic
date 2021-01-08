@@ -58,6 +58,8 @@ int Sweep(int Rang_down,int Rang_up);
 void Paint_V_f(float fre_sweep,int Range_down,int Range_up);
 void dis_init();
 double getVdc(u16 AD_value);
+void getRin();
+void getKw(double fre);
 
 
 int main() {
@@ -83,39 +85,11 @@ int main() {
 		if(!Troubleshooting && stop_flag){
 			IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
 			usleep(80000);
-	        KW_word = (fre_control*pow(2,32))/100000000;
-			IOWR(FRE_OUT_KW_BASE,0,KW_word);
-			if(fre_control >= 100000){
-				FRE_word = (1/(1/fre_control+pow(10,-8))*pow(2,32))/100000000;
-				IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
-				Times = pow(10,8)/fre_control;
-				IOWR(TIMES_BASE,0,2*Times);
-			}
-			else
-			{
-				FRE_word = ((fre_control*200)*pow(2,32))/100000000;
-				IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
-				Times = 200;
-				IOWR(TIMES_BASE,0,Times);
-			}
+			getKw(fre_control);
 
 			//R_in测量
-			while(!IORD(VPP_FOUND_BASE,0));
-			U_B = getVpp(IORD(VPP_BASE,0));
-			U_B_total = U_B_total + U_B;
-
-			IOWR(SWITCH_4WIRE_BASE,0,1);//继电器0001
-			usleep(60000);
-			while(!IORD(VPP_FOUND_BASE,0));
-			U_A = getVpp(IORD(VPP_BASE,0));
-			U_A_total = U_A_total + U_A;
-			Round_U1++;
-			if(Round_U1 == Aver_time){
-				R_in = (fabs(U_A_total-U_B_total)/U_B_total)*Res1;
-				U_0_total = U_A_total;U_r_total = U_B_total;
-				lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
-				Round_U1 = 0;U_A_total = 0;U_B_total = 0;
-			}
+			getRin();//比原来的多了一行继电器定义
+			lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
 
 			//R_out测量
 			IOWR(SWITCH_4WIRE_BASE,0,4); //继电器0100
@@ -128,7 +102,7 @@ int main() {
 			usleep(60000);
 			while(!IORD(VPP_FOUND_BASE,0));
 			U_2 = getVpp(IORD(VPP_BASE,0));
-			U_2_total = U_1_total + U_2;
+			U_2_total = U_2_total + U_2;
 			Round_U2++;
 			if(Round_U2 == Aver_time){
 				R_out = (fabs(U_1_total-U_2_total)/U_2_total)*Res2;
@@ -158,31 +132,161 @@ int main() {
 		}
 
 		//发挥功能
-		else if(Troubleshooting&&stop_flag){
+		else if(Troubleshooting && stop_flag){
 			//低通部分，直流检测（设fre=1000Hz;
 			IOWR(SWITCH_4WIRE_BASE,0,2);//继电器0010
 			usleep(80000);
 			fre_control = 1000;
-			KW_word = (fre_control*pow(2,32))/100000000;
-			IOWR(FRE_OUT_KW_BASE,0,KW_word);
-			if(fre_control >= 100000){
-				FRE_word = (1/(1/fre_control+pow(10,-8))*pow(2,32))/100000000;
-				IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
-				Times = pow(10,8)/fre_control;
-				IOWR(TIMES_BASE,0,2*Times);
-			}
-			else
-			{
-				FRE_word = ((fre_control*200)*pow(2,32))/100000000;
-				IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
-				Times = 200;
-				IOWR(TIMES_BASE,0,Times);
-			}
+			getKw(fre_control);
 			usleep(750000);
 			double V_DC = getVdc(IORD(DOUT_BASE, 0));	//单位：mV
+			lcdDispFloatSmall(525, 310, NAVY, WHITE, V_DC);
 
+			/*
+			 * V_DC正常电压：
+			 * 异常电压【电阻故障】：
+			 * R1断、R2短、R4断：		|| R1-R_in=15k | R2-R_in=0 | R4-R_in = 10.8k
+			 * R1短、R3短：			|| R1-R_in=0 | R3-R_in=R_in
+			 * R2断：
+			 * R3断：
+			 * R4断：
+			 */
 
+			if(V_DC > 2100 || (V_DC < 1500 && V_DC > 5)){//电压不正常，电阻故障
+				if(V_DC < 1200 && V_DC > 800){//典型值：1000——R2断路
+					lcdDispStringBig(560, 363, NAVY, WHITE, "R2");
+					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
+				}
+				else if(V_DC < 300 && V_DC > 200){//典型值：250——R3断路
+					lcdDispStringBig(560, 363, NAVY, WHITE, "R3");
+					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
+				}
+				else if(V_DC < 50 && V_DC > 5){//典型值：10——R4短路
+					lcdDispStringBig(560, 363, NAVY, WHITE, "R4");
+					lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
+				}
+				else if(V_DC < 3200 && V_DC > 2900){//典型值：3000——R1短||R3短
+					getRin();
+//					lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
 
+					double R_in_ref = R_in*10;
+				    if(R_in_ref < 2.5 && R_in_ref > 0.5){//典型值:0.14——R1短路
+						lcdDispStringBig(560, 363, NAVY, WHITE, "R1");
+						lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
+						R_in_ref = 0;
+					}
+					else{
+						lcdDispStringBig(560, 363, NAVY, WHITE, "R3");
+						lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
+						R_in_ref = 0;
+				    }
+				}
+				else if(V_DC < 2900 && V_DC > 2500){//典型值：2800——R1断|R2短|R4断
+					getRin();
+//					lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
+
+				    if(R_in < 0.25 && R_in > 0.05){//典型值:0.14——R2短路
+						lcdDispStringBig(560, 363, NAVY, WHITE, "R2");
+						lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
+					}
+				    else if(R_in < 16.5 && R_in > 13.5){//典型值：15——R1断路
+						lcdDispStringBig(560, 363, NAVY, WHITE, "R1");
+						lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
+				    }
+				    else if(R_in < 1.5 && R_in > 0.5){//典型值：0.8——R4断路
+						lcdDispStringBig(560, 363, NAVY, WHITE, "R4");
+						lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
+				    }
+				}
+			}
+
+			else{//电容错误判断
+				/*
+				 * C1断-R_in=∞|C1双-低频情况下，R_in增大
+				 * C2断-G=2.41|C2双-低频情况下，G增大
+				 * C3断-高频情况下，G增大|C3双-高频情况下，G减小
+				 */
+				getRin();
+//				lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
+
+				if(R_in > 400){//典型值：∞——C1断
+					lcdDispStringBig(560, 363, NAVY, WHITE, "C1");
+					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
+				}
+				else if(R_in < 12 && R_in > 8){//典型值：10.1？——C2断
+					lcdDispStringBig(560, 363, NAVY, WHITE, "C2");
+					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
+				}
+				else{
+					//高频情况：C3断|C3双
+					IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
+					usleep(50000);
+					fre_control = 100000;//100k
+					getKw(fre_control);
+					usleep(10000);
+					getRin();
+
+					IOWR(SWITCH_4WIRE_BASE,0,4); //继电器0100
+					usleep(60000);
+					while(!IORD(VPP_FOUND_BASE,0));
+					U_1 = getVpp(IORD(VPP_BASE,0));
+					U_1_total = U_1_total + U_1;
+					Round_U2++;
+					if(Round_U2 == Aver_time){
+						U_inf_total = U_1_total;
+						Round_U2 = 0;U_1_total = 0;
+						Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
+//						lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);
+					}
+
+					if(Gain > 150 && Gain < 180){//典型值：160-C3断
+						lcdDispStringBig(560, 363, NAVY, WHITE, "C3");
+						lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
+					}
+					else if(Gain < 100 && Gain > 85){//典型值：80-C3双倍
+						lcdDispStringBig(560, 363, NAVY, WHITE, "C3");
+						lcdDispStringBig(663, 363, NAVY, WHITE, "Double");
+					}
+					else{
+						//低频情况：C1双|C2双
+						fre_control = 100;
+						getKw(fre_control);
+						usleep(50000);
+						double R_in_before;
+						R_in_before = R_in;
+						getRin();
+
+						IOWR(SWITCH_4WIRE_BASE,0,4); //继电器0100
+						usleep(60000);
+						while(!IORD(VPP_FOUND_BASE,0));
+						U_1 = getVpp(IORD(VPP_BASE,0));
+						U_1_total = U_1_total + U_1;
+						Round_U2++;
+						if(Round_U2 == Aver_time){
+							U_inf_total = U_1_total;
+							Round_U2 = 0;U_1_total = 0;
+							Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
+	//						lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);
+						}
+
+						if(Gain > 80 && Gain < 110){//典型值：105-C2双倍
+							lcdDispStringBig(560, 363, NAVY, WHITE, "C2");
+							lcdDispStringBig(663, 363, NAVY, WHITE, "Double");
+						}
+						else{
+							if((R_in - R_in_before) > 5){//R_in增大-C1双倍
+								lcdDispStringBig(560, 363, NAVY, WHITE, "C1");
+								lcdDispStringBig(663, 363, NAVY, WHITE, "Double");
+							}
+							else{
+								//正常情况
+								lcdRectClear(560, 363, 590, 390, WHITE);
+								lcdDispStringBig(663, 363, NAVY, WHITE, "Normal");
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	return 0;
@@ -191,7 +295,7 @@ int main() {
 /********************************************屏幕绘制函数*********************************************************/
 
 void dis_init(){
-	lcdDispNumtable(50,40);
+	lcdDispNumtable(Num_X, Num_Y);
 	lcdDrawGrid(260, 50, 10, 28, 18, LGRAY);
 	lcdDrawRect(260, 40, 764, 230, BLACK);
 	lcdDispStringSmall(230, 15, BLACK, WHITE, "Normalized_Vpp");
@@ -201,8 +305,8 @@ void dis_init(){
 	lcdDrawHorLine(370, 50, 200, BLACK);
 	lcdDrawHorLine(410, 50, 200, BLACK);
 	lcdDrawVerLine(125, 370, 450, BLACK);
-	lcdDispStringSmall(60, 385, BLACK, WHITE, "F_L/Hz");
-	lcdDispStringSmall(60, 425, BLACK, WHITE, "F_H/MHz");
+	lcdDispStringSmall(65, 385, BLACK, WHITE, "F_L/Hz");
+	lcdDispStringSmall(65, 425, BLACK, WHITE, "F_H/Hz");
 
 	lcdDrawRect(260, 250, 764, 450, BLACK);
 	lcdDrawHorLine(300, 260, 511, BLACK);
@@ -259,28 +363,57 @@ int Sweep(int Rang_down,int Rang_up){
 			freq_sweep = Rang_down;
 		}
 
-		//扫频信号频率控制字
-		KW_word = (freq_sweep*pow(2,32))/100000000;
-		IOWR(FRE_OUT_KW_BASE,0,KW_word);
-		//ADS805采样时钟频率控制字
-		if(freq_sweep >= 100000){
-			FRE_word = (1/(1/freq_sweep+pow(10,-8))*pow(2,32))/100000000;
-			IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
-			Times = pow(10,8)/freq_sweep;
-			IOWR(TIMES_BASE,0,2*Times);
-		}
-		else
-		{
-			FRE_word = ((freq_sweep*200)*pow(2,32))/100000000;
-			IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
-			Times = 200;
-			IOWR(TIMES_BASE,0,Times);
-		}
+		getKw(freq_sweep);
 
 		usleep(60000);
 		Paint_V_f(freq_sweep, Rang_down, Rang_up);
     }
     return 0;
+}
+
+/******************************************R_in测量函数*********************************************************/
+
+void getRin(){
+	IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
+	while(!IORD(VPP_FOUND_BASE,0));
+	U_B = getVpp(IORD(VPP_BASE,0));
+	U_B_total = U_B_total + U_B;
+
+	IOWR(SWITCH_4WIRE_BASE,0,1);//继电器0001
+	usleep(60000);
+	while(!IORD(VPP_FOUND_BASE,0));
+	U_A = getVpp(IORD(VPP_BASE,0));
+	U_A_total = U_A_total + U_A;
+	Round_U1++;
+	if(Round_U1 == Aver_time){
+		R_in = (fabs(U_A_total-U_B_total)/U_B_total)*Res1;
+		U_0_total = U_A_total;U_r_total = U_B_total;
+//		lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
+		Round_U1 = 0;U_A_total = 0;U_B_total = 0;
+	}
+}
+
+/****************************************频率控制字获得函数********************************************************/
+
+void getKw(double fre){
+	//扫频信号频率控制字
+	KW_word = (fre*pow(2,32))/100000000;
+	IOWR(FRE_OUT_KW_BASE,0,KW_word);
+	//ADS805采样时钟频率控制字
+	if(fre >= 100000){
+		FRE_word = (1/(1/fre+pow(10,-8))*pow(2,32))/100000000;
+		IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
+		Times = pow(10,8)/fre;
+		IOWR(TIMES_BASE,0,2*Times);
+	}
+	else
+	{
+		FRE_word = ((fre*200)*pow(2,32))/100000000;
+		IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
+		Times = 200;
+		IOWR(TIMES_BASE,0,Times);
+	}
+
 }
 
 /****************************************幅频特性曲线绘制函数*******************************************************/
@@ -319,9 +452,9 @@ void Paint_V_f(float fre_sweep,int Range_down,int Range_up){
 		fre_range = (95*log10(Range_up)+16)-(95*log10(Range_down)+16);
 		for(int i=0; i < rda_end-1; i++){
 			// Vpp_draw[i] = 250-200*Vpp_pf[i]/max_of_Vpp--y
-			// fre_draw[i] = 760-500*fre_trans_pf[i]/fre_range--x
+			// fre_draw[i] = 764-504*fre_trans_pf[i]/fre_range--x
 			if(Vpp_pf[i+1] >= 0){
-//				lcdDrawLine(760-500*fre_trans_pf[i]/fre_range, 250-200*Vpp_pf[i]/max_of_Vpp, 760-500*fre_trans_pf[i+1]/fre_range, 250-200*Vpp_pf[i+1]/max_of_Vpp, BLACK);
+				lcdDrawLine(764-504*fre_trans_pf[i]/fre_range, 250-200*Vpp_pf[i]/max_of_Vpp, 764-504*fre_trans_pf[i+1]/fre_range, 250-200*Vpp_pf[i+1]/max_of_Vpp, BLACK);
 			}
 		}
 		draw_end = 1;
