@@ -401,6 +401,12 @@ void lcdDispDecBig(u16 xs, u16 ys, u16 fore, u16 back, int dec) {
 void lcdDispFloatSmall(u16 xs, u16 ys, u16 fore, u16 back, float flo) {
 	char str[16] = { 0 };
 	sprintf(str, "%f", flo);
+	for(int i = 0; i < 16; i++){
+		if(str[i] == '.'){
+			str[i+4] = 0;
+			break;
+		}
+	}
 	lcdDispStringSmall(xs, ys, fore, back, str);
 }
 
