@@ -23,13 +23,13 @@
 
 #define Res1 10	//R_in参考电阻--103=10*10^3
 #define Res2 2.2//R_out参考电阻--222=22*10^2
-#define Av 99	//仪表放大器放大值
-#define Aver_time 15 //多次测量取平均值
+#define Av 6	//仪表放大器放大值
+#define Aver_time 1 //多次测量取平均值
 #define FS 4096	//ADS1118阈值，实际值为4.096V
 
 int end_flag, draw_end, storge_end;
 int KW_word, FRE_word;	//KW_word:扫频信号频率控制字；FRE_word:采样时钟频率控制字
-int Times;
+int Times, rdaddress = 0;
 double fre_control;
 double U_A, U_A_total = 0, U_B, U_B_total = 0, U_1, U_1_total = 0, U_2, U_2_total = 0;
 double U_inf_total = 0, U_0_total = 0, U_r_total = 0;
@@ -47,7 +47,8 @@ int Round_U1 = 0,Round_U2;
 
 int rda_end = 129;
 double max_of_Vpp = -100;
-double fre_cut, fre_range;
+//double fre_cut, fre_range;
+int fre_cut;
 float Vpp_pf[600], fre_trans_pf[600], fre_pf[600];
 
 double getVpp(double vrd);
@@ -77,60 +78,73 @@ int main() {
 
 	while (1)
 	{
+
+
 		if(!Troubleshooting){
-			IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
-			usleep(80000);
+			if(!draw_flag){
+//				printf("Begin to measure!\n");
+				fre_control = 1000;
+			}
+//			IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
+//			usleep(80000);
 			getKw(fre_control);
 
 			//R_in测量
 			getRin();//比原来的多了一行继电器定义
+			lcdRectClear(383, 269, 455, 282, BACKGROUND);
 			lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
 
 			//R_out测量
 			IOWR(SWITCH_4WIRE_BASE,0,4); //继电器0100
-			usleep(60000);
+			usleep(100000);
 			while(!IORD(VPP_FOUND_BASE,0));
 			U_1 = getVpp(IORD(VPP_BASE,0));
 			U_1_total = U_1_total + U_1;
 
 			IOWR(SWITCH_4WIRE_BASE,0,12);//继电器1100
-			usleep(60000);
+			usleep(100000);
 			while(!IORD(VPP_FOUND_BASE,0));
 			U_2 = getVpp(IORD(VPP_BASE,0));
 			U_2_total = U_2_total + U_2;
 			Round_U2++;
 			if(Round_U2 == Aver_time){
 				R_out = (fabs((U_1_total-U_2_total)/U_2_total))*Res2;
+				printf("U_1_total = %d, U_2_total = %d\n",U_1_total,U_2_total);
 				U_inf_total = U_1_total;
+				lcdRectClear(383, 319, 455, 332, BACKGROUND);
 				lcdDispFloatSmall(383, 319, BLACK, WHITE, R_out);
 				Round_U2 = 0;U_1_total = 0;U_2_total = 0;
 
 				//Gain测量
-				Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
+				Gain=(U_inf_total/fabs(U_0_total-U_r_total))*Av;
+				lcdRectClear(383, 369, 455, 382, BACKGROUND);
 				lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);
 
 				//上限频率测量 && 幅频特性绘制
 				if(draw_flag){
+					printf("Begin to draw!\n");
 					end_flag = 0;
 					lcdRectClear(260, 40, 764, 230, BACKGROUND);
 					lcdDrawGrid(260, 50, 10, 28, 18, LGRAY);
 					Sweep(Range_down_data,Range_up_data);
 
 					IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
-					usleep(70000);
+					usleep(100000);
 				}
 			}
 		}
 
 		//发挥功能
 		else{
+//			printf("Begin to diagnosis the error!\n");
 			//低通部分，直流检测（设fre=1000Hz;
 			IOWR(SWITCH_4WIRE_BASE,0,2);//继电器0010
-			usleep(80000);
+			usleep(100000);
 			fre_control = 1000;
 			getKw(fre_control);
 			usleep(750000);
 			double V_DC = getVdc(IORD(DOUT_BASE, 0));	//单位：mV
+			lcdRectClear(525, 310, 625, 330, BACKGROUND);
 			lcdDispFloatSmall(525, 310, NAVY, WHITE, V_DC);
 
 			/*
@@ -158,6 +172,7 @@ int main() {
 				}
 				else if(V_DC < 3200 && V_DC > 2900){//典型值：3000——R1短||R3短
 					getRin();
+					lcdRectClear(383, 269, 455, 282, BACKGROUND);
 					lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);////////////////////////////////////////////
 
 					double R_in_ref = R_in*10;
@@ -174,6 +189,7 @@ int main() {
 				}
 				else if(V_DC < 2900 && V_DC > 2500){//典型值：2800——R1断|R2短|R4断
 					getRin();
+					lcdRectClear(383, 269, 455, 282, BACKGROUND);
 					lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);//////////////////////////////////////////////
 
 				    if(R_in < 0.25 && R_in > 0.05){//典型值:0.14——R2短路
@@ -197,7 +213,9 @@ int main() {
 				 * C2断-G=2.41|C2双-低频情况下，G增大
 				 * C3断-高频情况下，G增大|C3双-高频情况下，G减小
 				 */
+
 				getRin();
+				lcdRectClear(383, 269, 455, 282, BACKGROUND);
 				lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);//////////////////////////////////////
 
 				if(R_in > 400){//典型值：∞——C1断
@@ -211,14 +229,14 @@ int main() {
 				else{
 					//高频情况：C3断|C3双
 					IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
-					usleep(50000);
+					usleep(100000);
 					fre_control = 100000;//100k
 					getKw(fre_control);
 					usleep(10000);
 					getRin();
 
 					IOWR(SWITCH_4WIRE_BASE,0,4); //继电器0100
-					usleep(60000);
+					usleep(100000);
 					while(!IORD(VPP_FOUND_BASE,0));
 					U_1 = getVpp(IORD(VPP_BASE,0));
 					U_1_total = U_1_total + U_1;
@@ -227,6 +245,7 @@ int main() {
 						U_inf_total = U_1_total;
 						Round_U2 = 0;U_1_total = 0;
 						Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
+						lcdRectClear(383, 369, 455, 382, BACKGROUND);
 						lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);////////////////////////////////////
 					}
 
@@ -248,7 +267,7 @@ int main() {
 						getRin();
 
 						IOWR(SWITCH_4WIRE_BASE,0,4); //继电器0100
-						usleep(60000);
+						usleep(100000);
 						while(!IORD(VPP_FOUND_BASE,0));
 						U_1 = getVpp(IORD(VPP_BASE,0));
 						U_1_total = U_1_total + U_1;
@@ -257,6 +276,7 @@ int main() {
 							U_inf_total = U_1_total;
 							Round_U2 = 0;U_1_total = 0;
 							Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
+							lcdRectClear(383, 369, 455, 382, BACKGROUND);
 							lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);////////////////////////////////////
 						}
 
@@ -278,7 +298,9 @@ int main() {
 					}
 				}
 			}
+
 		}
+
 	}
 	return 0;
 }
@@ -298,6 +320,9 @@ void dis_init(){
 	lcdDrawVerLine(125, 370, 450, BLACK);
 	lcdDispStringSmall(65, 385, BLACK, WHITE, "F_L/Hz");
 	lcdDispStringSmall(65, 425, BLACK, WHITE, "F_H/Hz");
+	lcdDispDecSmall(129, 425, BLACK, WHITE, 1000000);
+	lcdDispDecSmall(129, 385, BLACK, WHITE, 10);
+
 
 	lcdDrawRect(260, 250, 764, 450, BLACK);
 	lcdDrawHorLine(300, 260, 511, BLACK);
@@ -327,6 +352,7 @@ void io_init(){
 	fre_control = 1000;
 	getKw(fre_control);
 	IOWR(SWITCH_4WIRE_BASE,0,0);
+	usleep(100000);
 }
 
 /********************************************标志位初始化*********************************************************/
@@ -346,9 +372,13 @@ void flag_init(){
 int Sweep(int Rang_down,int Rang_up){
 	float freq_sweep = Rang_down;
     IOWR(SWITCH_4WIRE_BASE,0,5);	//继电器0101
+    usleep(100000);
 
     while(!end_flag){
+    	if(Troubleshooting)
+    		end_flag = 1;
         IOWR(SWITCH_4WIRE_BASE,0,5);//继电器0101
+        usleep(100000);
 		if(freq_sweep <= 200)							//0~200
 		{
 			freq_sweep = freq_sweep+30;
@@ -375,7 +405,6 @@ int Sweep(int Rang_down,int Rang_up){
 		}
 		getKw(freq_sweep);
 
-		usleep(60000);
 		Paint_V_f(freq_sweep, Rang_down, Rang_up);
     }
     return 0;
@@ -385,19 +414,20 @@ int Sweep(int Rang_down,int Rang_up){
 
 void getRin(){
 	IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
-	usleep(80000);
+	usleep(100000);
 	while(!IORD(VPP_FOUND_BASE,0));
 	U_B = getVpp(IORD(VPP_BASE,0));
 	U_B_total = U_B_total + U_B;
 
 	IOWR(SWITCH_4WIRE_BASE,0,1);//继电器0001
-	usleep(60000);
+	usleep(100000);
 	while(!IORD(VPP_FOUND_BASE,0));
 	U_A = getVpp(IORD(VPP_BASE,0));
 	U_A_total = U_A_total + U_A;
 	Round_U1++;
 	if(Round_U1 == Aver_time){
 		R_in = (fabs((U_A_total-U_B_total)/U_B_total))*Res1;
+		printf("U_A_total = %d, U_B_total = %d\n",U_A_total,U_B_total);
 		U_0_total = U_A_total;U_r_total = U_B_total;
 //		lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
 		Round_U1 = 0;U_A_total = 0;U_B_total = 0;
@@ -408,20 +438,20 @@ void getRin(){
 
 void getKw(double fre){
 	//扫频信号频率控制字
-	KW_word = (fre*pow(2,32))/100000000;
+	KW_word = (fre*pow(2,32))/400000000;
 	IOWR(FRE_OUT_KW_BASE,0,KW_word);
 	//ADS805采样时钟频率控制字
 	if(fre >= 100000){
-		FRE_word = (1/(1/fre+pow(10,-8))*pow(2,32))/100000000;
+		FRE_word = (1/(1/fre+pow(10,-8))*pow(2,32))/400000000;
 		IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
 		Times = pow(10,8)/fre;
-		IOWR(TIMES_BASE,0,2*Times);
+		IOWR(TIMES_BASE,0,4*Times);
 	}
 	else
 	{
-		FRE_word = ((fre*200)*pow(2,32))/100000000;
+		FRE_word = ((fre*200)*pow(2,32))/400000000;
 		IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
-		Times = 200;
+		Times = 400;
 		IOWR(TIMES_BASE,0,Times);
 	}
 }
@@ -429,16 +459,17 @@ void getKw(double fre){
 /****************************************幅频特性曲线绘制函数*******************************************************/
 
 void Paint_V_f(float fre_sweep,int Range_down,int Range_up){
-	int rdaddress = 0;
 	while(!IORD(VPP_FOUND_BASE,0));//继电器0101
 	double addata_in = getVpp(IORD(VPP_BASE,0));
 
 	//寻找截止频率点+存储数据准备绘图
 	if(draw_end){
 		Vpp_pf[rdaddress] = addata_in;
-		fre_trans_pf[rdaddress] = 95*log10(fre_sweep)+16;//非均匀量化
+//		fre_trans_pf[rdaddress] = 95*log10(fre_sweep)+16;//非均匀量化
+		fre_trans_pf[rdaddress] = 84*log10(fre_sweep)+176;//非均匀量化
 		fre_pf[rdaddress] = fre_sweep;
 		rdaddress++;
+//		printf("rdaddress = %d\n",rdaddress);
 
 		if(addata_in > max_of_Vpp){
 			max_of_Vpp = addata_in;
@@ -450,23 +481,28 @@ void Paint_V_f(float fre_sweep,int Range_down,int Range_up){
 			for(int i = 1; i < rda_end - 1; i++){
 				if(Vpp_pf[i-1] > max_of_Vpp*0.7 && Vpp_pf[i+1] <= max_of_Vpp*0.7){
 					fre_cut = fre_pf[i];
-					lcdDispFloatSmall(383, 419, BLACK, WHITE, fre_cut);
+					lcdRectClear(383, 419, 455, 432, BACKGROUND);
+					lcdDispDecSmall(383, 419, BLACK, WHITE, fre_cut);
 				}
 			}
+			printf("Store over!\n");
 		}
 	}
 
 	if(storge_end){
+		printf("Begin drawing V-f!\n");
 		storge_end = 0;
 		draw_end = 0;
-		fre_range = (95*log10(Range_up)+16)-(95*log10(Range_down)+16);
+//		fre_range = (95*log10(Range_up)+16)-(95*log10(Range_down)+16);
 		for(int i = 0; i < rda_end-1; i++){
 			// Vpp_draw[i] = 230-180*Vpp_pf[i]/max_of_Vpp--y
-			// fre_draw[i] = 764-504*fre_trans_pf[i]/fre_range--x
-			if(Vpp_pf[i+1] >= 0){
-				lcdDrawLine(764-504*fre_trans_pf[i]/fre_range, 230-180*Vpp_pf[i]/max_of_Vpp, 764-504*fre_trans_pf[i+1]/fre_range, 230-180*Vpp_pf[i+1]/max_of_Vpp, BLACK);
+			// fre_draw[i] = 764-504*fre_trans_pf[i]/fre_range--x--原值
+			if(Vpp_pf[i+1] >= 0 && (fre_trans_pf[i] <= fre_trans_pf[i+1])){
+				printf("fre_trans_pf[%d] = %d\n",i,fre_trans_pf[i]);
+				lcdDrawLine(fre_trans_pf[i], 230-180*(Vpp_pf[i]/max_of_Vpp), fre_trans_pf[i+1], 230-180*(Vpp_pf[i+1]/max_of_Vpp), BLACK);
 			}
 		}
+		printf("Finish drawing!\n");
 		draw_end = 1;
 		end_flag = 1;
 		max_of_Vpp = -100;
@@ -478,6 +514,10 @@ void Paint_V_f(float fre_sweep,int Range_down,int Range_up){
 double getVpp(double vrd){
 	double vin;
 	vin = vrd * 1.312-1.323;
+	if(vin <= 0){
+		vin = vrd;
+	}
+	vin = vin/1000;
 	return vin;
 }
 
