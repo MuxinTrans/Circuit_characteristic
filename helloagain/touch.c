@@ -49,7 +49,7 @@ int touchResponse(int x_low, int x_high, int y_low, int y_high, int page) {//按
 	if((local.now.x > x_low) && (local.now.x < x_high) && (local.now.y > y_low) && (local.now.y < y_high) && (local.status == 0))
 	{
 		lcdRectClear(x_low, y_low, x_high,y_high, DGRAY);
-		printf("Touch Response!\n");
+//		printf("Touch Response!\n");
 		return 1;
 	}
 	else if((local.now.x > x_low) && (local.now.x < x_high) && (local.now.y > y_low) && (local.now.y < y_high) && (local.status == 1))
@@ -83,7 +83,7 @@ void button_table(int page){
 			lcdRectClear(126, 385, 198, 397, BACKGROUND);
 		}
 
-		if(bit_array <= (bit_length-1))
+		if(bit_pointer <= bit_length-1)
 		{
 			bit_pointer++;
 			bit_array[bit_pointer]=1;
@@ -403,6 +403,7 @@ void button_table(int page){
 		if(mode == 0){
 			mode = 1;
 			draw_flag = 1;
+			Troubleshooting = 0;
 			lcdRectClear(60, 335, 190, 365, BACKGROUND);
 			lcdDispStringSmall(60, 344, RED, WHITE, "Drawing");
 
@@ -416,6 +417,7 @@ void button_table(int page){
 		}
 		else{
 			mode = 0;
+			draw_flag = 0;
 			Troubleshooting = 0;
 			lcdRectClear(60, 335, 190, 365, BACKGROUND);
 			lcdDispStringSmall(60, 344, RED, WHITE, "Measuring");
