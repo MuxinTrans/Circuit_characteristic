@@ -334,8 +334,8 @@ void button_table(int page){
 			num_output = 0;
 		}
 		else{
-			if(num_output < 10){
-				num_output = 10;
+			if(num_output < 100){
+				num_output = 100;
 				lcdRectClear(126, 385, 198, 397, BACKGROUND);
 				lcdDispDecSmall(129, 385, BLACK, WHITE, num_output);
 			}
