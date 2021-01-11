@@ -18,6 +18,7 @@ extern int mode = 0, Range_w = 0;//Range_w=0-F_L|1-F_H
 extern int Num_X = 50,Num_Y = 40;
 extern double Range_up_data = 0,Range_down_data = 0;
 extern int Troubleshooting,draw_flag;
+extern int switch_mode = 0;
 
 int touchInit(void) {
 	i2cInit();
@@ -49,7 +50,6 @@ int touchResponse(int x_low, int x_high, int y_low, int y_high, int page) {//按
 	if((local.now.x > x_low) && (local.now.x < x_high) && (local.now.y > y_low) && (local.now.y < y_high) && (local.status == 0))
 	{
 		lcdRectClear(x_low, y_low, x_high,y_high, DGRAY);
-		printf("Touch Response!\n");
 		return 1;
 	}
 	else if((local.now.x > x_low) && (local.now.x < x_high) && (local.now.y > y_low) && (local.now.y < y_high) && (local.status == 1))
@@ -76,6 +76,10 @@ void button_table(int page){
 	if(touchResponse(Num_X, Num_X+50, Num_Y, Num_Y+50, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		switch_mode = 1;
+		lcdRectClear(400, 80, 600, 100, BACKGROUND);
+		lcdDispStringSmall(400, 80, BLACK, WHITE, "switch = 0100-4");
+
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
@@ -102,6 +106,10 @@ void button_table(int page){
 	if(touchResponse(Num_X+50, Num_X+100, Num_Y, Num_Y+50, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		switch_mode = 2;
+		lcdRectClear(400, 80, 600, 100, BACKGROUND);
+		lcdDispStringSmall(400, 80, BLACK, WHITE, "switch = 0101-5");
+
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
@@ -129,6 +137,10 @@ void button_table(int page){
 	if(touchResponse(Num_X+100, Num_X+150, Num_Y, Num_Y+50, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		switch_mode = 3;
+		lcdRectClear(400, 80, 600, 100, BACKGROUND);
+		lcdDispStringSmall(400, 80, BLACK, WHITE, "switch = 0110-6");
+
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
@@ -156,6 +168,10 @@ void button_table(int page){
 	if(touchResponse(Num_X, Num_X+50, Num_Y+50, Num_Y+100, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		switch_mode = 4;
+		lcdRectClear(400, 80, 600, 100, BACKGROUND);
+		lcdDispStringSmall(400, 80, BLACK, WHITE, "switch = 0000-0");
+
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
@@ -183,6 +199,10 @@ void button_table(int page){
 	if(touchResponse(Num_X+50, Num_X+100, Num_Y+50, Num_Y+100, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		switch_mode = 5;
+		lcdRectClear(400, 80, 600, 100, BACKGROUND);
+		lcdDispStringSmall(400, 80, BLACK, WHITE, "switch = 0001-1");
+
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
@@ -210,6 +230,10 @@ void button_table(int page){
 	if(touchResponse(Num_X+100, Num_X+150, Num_Y+50, Num_Y+100, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		switch_mode = 6;
+		lcdRectClear(400, 80, 600, 100, BACKGROUND);
+		lcdDispStringSmall(400, 80, BLACK, WHITE, "switch = 1000-8");
+
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
@@ -237,6 +261,10 @@ void button_table(int page){
 	if(touchResponse(Num_X, Num_X+50, Num_Y+100, Num_Y+150, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		IOWR(SWITCH_4WIRE_BASE,0,1);
+		lcdRectClear(400, 80, 600, 100, BACKGROUND);
+		lcdDispStringSmall(400, 80, BLACK, WHITE, "switch = 0001");
+
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
@@ -264,6 +292,10 @@ void button_table(int page){
 	if(touchResponse(Num_X+50, Num_X+100, Num_Y+100, Num_Y+150, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		IOWR(SWITCH_4WIRE_BASE,0,3);
+		lcdRectClear(400, 80, 600, 100, BACKGROUND);
+		lcdDispStringSmall(400, 80, BLACK, WHITE, "switch = 0011");
+
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
@@ -291,6 +323,10 @@ void button_table(int page){
 	if(touchResponse(Num_X+100, Num_X+150, Num_Y+100, Num_Y+150, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		IOWR(SWITCH_4WIRE_BASE,0,7);
+		lcdRectClear(400, 80, 600, 100, BACKGROUND);
+		lcdDispStringSmall(400, 80, BLACK, WHITE, "switch = 0111");
+
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
@@ -353,6 +389,10 @@ void button_table(int page){
 	if(touchResponse(Num_X+50, Num_X+100, Num_Y+150, Num_Y+200, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		IOWR(SWITCH_4WIRE_BASE,0,15);
+		lcdRectClear(400, 80, 600, 100, BACKGROUND);
+		lcdDispStringSmall(400, 80, BLACK, WHITE, "switch = 1111");
+
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
