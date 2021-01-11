@@ -23,13 +23,13 @@
 
 #define Res1 10	//R_in参考电阻--103=10*10^3
 #define Res2 2.2//R_out参考电阻--222=22*10^2
-#define Av 99	//仪表放大器放大值
+#define Av 6	//仪表放大器放大值
 #define Aver_time 15 //多次测量取平均值
 #define FS 4096	//ADS1118阈值，实际值为4.096V
 
 int end_flag, draw_end, storge_end;
 int KW_word, FRE_word;	//KW_word:扫频信号频率控制字；FRE_word:采样时钟频率控制字
-int Times;
+int Times, rdaddress = 0;
 double fre_control;
 double U_A, U_A_total = 0, U_B, U_B_total = 0, U_1, U_1_total = 0, U_2, U_2_total = 0;
 double U_inf_total = 0, U_0_total = 0, U_r_total = 0;
@@ -47,7 +47,7 @@ int Round_U1 = 0,Round_U2;
 
 int rda_end = 129;
 double max_of_Vpp = -100;
-double fre_cut, fre_range;
+int fre_cut;
 float Vpp_pf[600], fre_trans_pf[600], fre_pf[600];
 
 double getVpp(double vrd);
@@ -57,7 +57,6 @@ void dis_init();
 void io_init();
 void flag_init();
 double getVdc(u16 AD_value);
-void getRin();
 void getKw(double fre);
 
 
@@ -70,234 +69,134 @@ int main() {
 	dis_init();
 	io_init();
 	flag_init();
-	Range_down_data = 10.0;
+	Range_down_data = 100.0;
 	Range_up_data = 1000000.0;//1M
 
 	printf("Finish Initial!\n");
 
 	while (1)
 	{
-		/*
-		//扫频输出测试---直接用DAC904测量输出
-		Sweep(Range_down_data,Range_up_data);
-		*/
+		if(switch_mode != 5)
+		{
+			fre_control = 1000;
+			getKw(fre_control);
+		}
+	/*******************************switch-0000-0测试*********************************************/
+	/*-----------------------------输入部分参考电阻接入时的电压-------------------------------------------*/
+	if(switch_mode == 1){
+//		IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
+		IOWR(SWITCH_4WIRE_BASE,0,4);//继电器0000-->0100
+		usleep(100000);
+		while(!IORD(VPP_FOUND_BASE,0));
+		U_B = getVpp(IORD(VPP_BASE,0));
+		U_B_total = U_B_total + U_B;
 
-		//1kHz DDS信号测试---直接用DAC904测量输出
-		//Vpp测试测试---直接用ADS805测试--信号源输入为1kHz？---注意ADS805的采样时钟的输出
+		Round_U1++;
+		if(Round_U1 == Aver_time){
+			U_B = U_B_total/Aver_time;
+			lcdRectClear(400, 100, 500, 120, BACKGROUND);
+			lcdDispFloatSmall(400, 100, BLACK, WHITE, U_B);
+			Round_U1 = 0;U_B_total = 0;
+		}
+	}
+	/*******************************switch-0001-1测试*********************************************/
+	/*-----------------------------输入部分参考电阻短接时的电压-------------------------------------------*/
+	else if(switch_mode == 2){
+//		IOWR(SWITCH_4WIRE_BASE,0,1);//继电器0001
+		IOWR(SWITCH_4WIRE_BASE,0,5);//继电器0001-->0101
+		usleep(100000);
+		while(!IORD(VPP_FOUND_BASE,0));
+		U_A = getVpp(IORD(VPP_BASE,0));
+		U_A_total = U_A_total + U_A;
+
+		Round_U1++;
+		if(Round_U1 == Aver_time){
+			U_A = U_A_total/Aver_time;
+			lcdRectClear(400, 100, 500, 120, BACKGROUND);
+			lcdDispFloatSmall(400, 100, BLACK, WHITE, U_A);
+			Round_U1 = 0;U_A_total = 0;
+		}
+	}
+	/*******************************switch-0010-2测试*********************************************/
+	/*--------------------------------低通模式下的直流电压---------------------------------------------*/
+	else if(switch_mode == 3){
+		//低通部分，直流检测（设fre=1000Hz;
+//		IOWR(SWITCH_4WIRE_BASE,0,2);//继电器0010-->0000
+		IOWR(SWITCH_4WIRE_BASE,0,6);//继电器0010-->0110
+		usleep(100000);
+		fre_control = 1000;
+		getKw(fre_control);
+		usleep(750000);
+		double V_DC = getVdc(IORD(DOUT_BASE, 0));	//单位：mV
+		lcdRectClear(400, 100, 500, 120, BACKGROUND);
+		lcdDispFloatSmall(400, 100, BLACK, WHITE, V_DC);
+	}
+	/***********************************switch-0011-3测试************************************************/
+
+	/***********************************switch-0100-4测试************************************************/
+	/*---------------------------------输出部分参考电阻断路时的电压----------------------------------------------*/
+	else if(switch_mode == 4){
+//		IOWR(SWITCH_4WIRE_BASE,0,4); //继电器0100--0110
+		IOWR(SWITCH_4WIRE_BASE,0,0); //继电器0100--0000
+		fre_control = 1000;
+		getKw(fre_control);
+		usleep(100000);
 		while(!IORD(VPP_FOUND_BASE,0));
 		U_1 = getVpp(IORD(VPP_BASE,0));
 		U_1_total = U_1_total + U_1;
+
 		Round_U2++;
 		if(Round_U2 == Aver_time){
-			lcdRectClear(500, 100, 600, 120, WHITE);
-			lcdDispFloatSmall(500, 100, BLACK, WHITE, U_1_total/Round_U2);
-			U_1_total = 0;Round_U2=0;
+			U_1 = U_1_total/Aver_time;
+			lcdRectClear(400, 100, 500, 120, BACKGROUND);
+			lcdDispFloatSmall(400, 100, BLACK, WHITE, U_1);
+			Round_U2 = 0;U_1_total = 0;
 		}
+	}
+	/*********************************switch-0101-5测试**************************************************/
+	else if(switch_mode == 5){
+		lcdRectClear(260, 40, 764, 230, BACKGROUND);
+		lcdDrawGrid(260, 50, 10, 28, 18, LGRAY);
+		end_flag = 0;
+		Sweep(Range_down_data, Range_up_data);
+	}
+	/*********************************switch-0110-6测试**************************************************/
 
-		/*
-		if(!Troubleshooting){
-			IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
-			usleep(80000);
-			getKw(fre_control);
+	/*********************************switch-0111-7测试**************************************************/
 
-			//R_in测量
-			getRin();//比原来的多了一行继电器定义
-			lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
+	/*********************************switch-1000-8测试**************************************************/
 
-			//R_out测量
-			IOWR(SWITCH_4WIRE_BASE,0,4); //继电器0100
-			usleep(60000);
-			while(!IORD(VPP_FOUND_BASE,0));
-			U_1 = getVpp(IORD(VPP_BASE,0));
-			U_1_total = U_1_total + U_1;
+	/*********************************switch-1001-9测试**************************************************/
 
-			IOWR(SWITCH_4WIRE_BASE,0,12);//继电器1100
-			usleep(60000);
-			while(!IORD(VPP_FOUND_BASE,0));
-			U_2 = getVpp(IORD(VPP_BASE,0));
-			U_2_total = U_2_total + U_2;
-			Round_U2++;
-			if(Round_U2 == Aver_time){
-				R_out = (fabs((U_1_total-U_2_total)/U_2_total))*Res2;
-				U_inf_total = U_1_total;
-				lcdDispFloatSmall(383, 319, BLACK, WHITE, R_out);
-				Round_U2 = 0;U_1_total = 0;U_2_total = 0;
+	/*********************************switch-1010-10测试**************************************************/
 
-				//Gain测量
-				Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
-				lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);
+	/*********************************switch-1011-11测试**************************************************/
 
-				//上限频率测量 && 幅频特性绘制
-				if(draw_flag){
-					end_flag = 0;
-					lcdRectClear(260, 40, 764, 230, BACKGROUND);
-					lcdDrawGrid(260, 50, 10, 28, 18, LGRAY);
-					Sweep(Range_down_data,Range_up_data);
-
-					IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
-					usleep(70000);
-				}
-			}
+	/*********************************switch-1100-12测试**************************************************/
+	/*-------------------------------输出部分参考电阻接入时的电压-------------------------------------------------*/
+	else if(switch_mode == 6){
+//		IOWR(SWITCH_4WIRE_BASE,0,12);//继电器1100
+		IOWR(SWITCH_4WIRE_BASE,0,8);//继电器1100-1000
+		fre_control = 1000;
+		getKw(fre_control);
+		usleep(100000);
+		while(!IORD(VPP_FOUND_BASE,0));
+		U_2 = getVpp(IORD(VPP_BASE,0));
+		U_2_total = U_2_total + U_2;
+		Round_U2++;
+		if(Round_U2 == Aver_time){
+			U_2 = U_2_total/Aver_time;
+			lcdRectClear(400, 100, 500, 120, BACKGROUND);
+			lcdDispFloatSmall(400, 100, BLACK, WHITE, U_2);
+			Round_U2 = 0;U_2_total = 0;
 		}
+	}
+	/*********************************switch-1101-13测试**************************************************/
 
-		//发挥功能
-		else{
-			//低通部分，直流检测（设fre=1000Hz;
-			IOWR(SWITCH_4WIRE_BASE,0,2);//继电器0010
-			usleep(80000);
-			fre_control = 1000;
-			getKw(fre_control);
-			usleep(750000);
-			double V_DC = getVdc(IORD(DOUT_BASE, 0));	//单位：mV
-			lcdDispFloatSmall(525, 310, NAVY, WHITE, V_DC);
+	/*********************************switch-1110-14测试**************************************************/
 
-			/*
-			 * V_DC正常电压：
-			 * 异常电压【电阻故障】：
-			 * R1断、R2短、R4断：		|| R1-R_in=15k | R2-R_in=0 | R4-R_in = 10.8k
-			 * R1短、R3短：			|| R1-R_in=0 | R3-R_in=R_in
-			 * R2断：
-			 * R3断：
-			 * R4断：
-			 */
-/*
-			if(V_DC > 2100 || (V_DC < 1500 && V_DC > 5)){//电压不正常，电阻故障
-				if(V_DC < 1200 && V_DC > 800){//典型值：1000——R2断路
-					lcdDispStringBig(560, 363, NAVY, WHITE, "R2");
-					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
-				}
-				else if(V_DC < 300 && V_DC > 200){//典型值：250——R3断路
-					lcdDispStringBig(560, 363, NAVY, WHITE, "R3");
-					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
-				}
-				else if(V_DC < 50 && V_DC > 5){//典型值：10——R4短路
-					lcdDispStringBig(560, 363, NAVY, WHITE, "R4");
-					lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
-				}
-				else if(V_DC < 3200 && V_DC > 2900){//典型值：3000——R1短||R3短
-					getRin();
-					lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);////////////////////////////////////////////
+	/*********************************switch-1111-15测试**************************************************/
 
-					double R_in_ref = R_in*10;
-				    if(R_in_ref < 2.5 && R_in_ref > 0.5){//典型值:0.14——R1短路
-						lcdDispStringBig(560, 363, NAVY, WHITE, "R1");
-						lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
-						R_in_ref = 0;
-					}
-					else{
-						lcdDispStringBig(560, 363, NAVY, WHITE, "R3");
-						lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
-						R_in_ref = 0;
-				    }
-				}
-				else if(V_DC < 2900 && V_DC > 2500){//典型值：2800——R1断|R2短|R4断
-					getRin();
-					lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);//////////////////////////////////////////////
-
-				    if(R_in < 0.25 && R_in > 0.05){//典型值:0.14——R2短路
-						lcdDispStringBig(560, 363, NAVY, WHITE, "R2");
-						lcdDispStringBig(663, 363, NAVY, WHITE, "Short ");
-					}
-				    else if(R_in < 16.5 && R_in > 13.5){//典型值：15——R1断路
-						lcdDispStringBig(560, 363, NAVY, WHITE, "R1");
-						lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
-				    }
-				    else if(R_in < 1.5 && R_in > 0.5){//典型值：0.8——R4断路
-						lcdDispStringBig(560, 363, NAVY, WHITE, "R4");
-						lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
-				    }
-				}
-			}
-
-			else{//电容错误判断
-				/*
-				 * C1断-R_in=∞|C1双-低频情况下，R_in增大
-				 * C2断-G=2.41|C2双-低频情况下，G增大
-				 * C3断-高频情况下，G增大|C3双-高频情况下，G减小
-				 */
-/*				getRin();
-				lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);//////////////////////////////////////
-
-				if(R_in > 400){//典型值：∞——C1断
-					lcdDispStringBig(560, 363, NAVY, WHITE, "C1");
-					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
-				}
-				else if(R_in < 12 && R_in > 8){//典型值：10.1？——C2断
-					lcdDispStringBig(560, 363, NAVY, WHITE, "C2");
-					lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
-				}
-				else{
-					//高频情况：C3断|C3双
-					IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
-					usleep(50000);
-					fre_control = 100000;//100k
-					getKw(fre_control);
-					usleep(10000);
-					getRin();
-
-					IOWR(SWITCH_4WIRE_BASE,0,4); //继电器0100
-					usleep(60000);
-					while(!IORD(VPP_FOUND_BASE,0));
-					U_1 = getVpp(IORD(VPP_BASE,0));
-					U_1_total = U_1_total + U_1;
-					Round_U2++;
-					if(Round_U2 == Aver_time){
-						U_inf_total = U_1_total;
-						Round_U2 = 0;U_1_total = 0;
-						Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
-						lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);////////////////////////////////////
-					}
-
-					if(Gain > 150 && Gain < 180){//典型值：160-C3断
-						lcdDispStringBig(560, 363, NAVY, WHITE, "C3");
-						lcdDispStringBig(663, 363, NAVY, WHITE, " Open ");
-					}
-					else if(Gain < 100 && Gain > 85){//典型值：80-C3双倍
-						lcdDispStringBig(560, 363, NAVY, WHITE, "C3");
-						lcdDispStringBig(663, 363, NAVY, WHITE, "Double");
-					}
-					else{
-						//低频情况：C1双|C2双
-						fre_control = 100;
-						getKw(fre_control);
-						usleep(50000);
-						double R_in_before;
-						R_in_before = R_in;
-						getRin();
-
-						IOWR(SWITCH_4WIRE_BASE,0,4); //继电器0100
-						usleep(60000);
-						while(!IORD(VPP_FOUND_BASE,0));
-						U_1 = getVpp(IORD(VPP_BASE,0));
-						U_1_total = U_1_total + U_1;
-						Round_U2++;
-						if(Round_U2 == Aver_time){
-							U_inf_total = U_1_total;
-							Round_U2 = 0;U_1_total = 0;
-							Gain=U_inf_total/fabs(U_0_total-U_r_total)*Av;
-							lcdDispFloatSmall(383, 369, BLACK, WHITE, Gain);////////////////////////////////////
-						}
-
-						if(Gain > 80 && Gain < 110){//典型值：105-C2双倍
-							lcdDispStringBig(560, 363, NAVY, WHITE, "C2");
-							lcdDispStringBig(663, 363, NAVY, WHITE, "Double");
-						}
-						else{
-							if((R_in - R_in_before) > 5){//R_in增大-C1双倍
-								lcdDispStringBig(560, 363, NAVY, WHITE, "C1");
-								lcdDispStringBig(663, 363, NAVY, WHITE, "Double");
-							}
-							else{
-								//正常情况
-								lcdRectClear(560, 363, 590, 390, WHITE);
-								lcdDispStringBig(663, 363, NAVY, WHITE, "Normal");
-							}
-						}
-					}
-				}
-			}
-		}
-		*/
 	}
 	return 0;
 }
@@ -317,6 +216,9 @@ void dis_init(){
 	lcdDrawVerLine(125, 370, 450, BLACK);
 	lcdDispStringSmall(65, 385, BLACK, WHITE, "F_L/Hz");
 	lcdDispStringSmall(65, 425, BLACK, WHITE, "F_H/Hz");
+	lcdDispDecSmall(129, 425, BLACK, WHITE, 1000000);
+	lcdDispDecSmall(129, 385, BLACK, WHITE, 10);
+
 
 	lcdDrawRect(260, 250, 764, 450, BLACK);
 	lcdDrawHorLine(300, 260, 511, BLACK);
@@ -345,7 +247,8 @@ void dis_init(){
 void io_init(){
 	fre_control = 1000;
 	getKw(fre_control);
-	IOWR(SWITCH_4WIRE_BASE,0,0);
+	IOWR(SWITCH_4WIRE_BASE,0,4);//继电器0100
+	usleep(100000);
 }
 
 /********************************************标志位初始化*********************************************************/
@@ -364,10 +267,13 @@ void flag_init(){
 
 int Sweep(int Rang_down,int Rang_up){
 	float freq_sweep = Rang_down;
-    IOWR(SWITCH_4WIRE_BASE,0,5);	//继电器0101
+//	IOWR(SWITCH_4WIRE_BASE,0,5);//继电器0101
+	IOWR(SWITCH_4WIRE_BASE,0,1);//继电器0101-0001
+    usleep(100000);
 
     while(!end_flag){
-        IOWR(SWITCH_4WIRE_BASE,0,5);//继电器0101
+    	if(Troubleshooting)
+    		end_flag = 1;
 		if(freq_sweep <= 200)							//0~200
 		{
 			freq_sweep = freq_sweep+30;
@@ -393,54 +299,31 @@ int Sweep(int Rang_down,int Rang_up){
 			freq_sweep = Rang_down;
 		}
 		getKw(freq_sweep);
-
 		usleep(60000);
+
 		Paint_V_f(freq_sweep, Rang_down, Rang_up);
     }
     return 0;
-}
-
-/******************************************R_in测量函数*********************************************************/
-
-void getRin(){
-	IOWR(SWITCH_4WIRE_BASE,0,0);//继电器0000
-	usleep(80000);
-	while(!IORD(VPP_FOUND_BASE,0));
-	U_B = getVpp(IORD(VPP_BASE,0));
-	U_B_total = U_B_total + U_B;
-
-	IOWR(SWITCH_4WIRE_BASE,0,1);//继电器0001
-	usleep(60000);
-	while(!IORD(VPP_FOUND_BASE,0));
-	U_A = getVpp(IORD(VPP_BASE,0));
-	U_A_total = U_A_total + U_A;
-	Round_U1++;
-	if(Round_U1 == Aver_time){
-		R_in = (fabs((U_A_total-U_B_total)/U_B_total))*Res1;
-		U_0_total = U_A_total;U_r_total = U_B_total;
-//		lcdDispFloatSmall(383, 269, BLACK, WHITE, R_in);
-		Round_U1 = 0;U_A_total = 0;U_B_total = 0;
-	}
 }
 
 /****************************************频率控制字获得函数********************************************************/
 
 void getKw(double fre){
 	//扫频信号频率控制字
-	KW_word = (fre*pow(2,32))/100000000;
+	KW_word = (fre*pow(2,32))/400000000;
 	IOWR(FRE_OUT_KW_BASE,0,KW_word);
 	//ADS805采样时钟频率控制字
 	if(fre >= 100000){
-		FRE_word = (1/(1/fre+pow(10,-8))*pow(2,32))/100000000;
+		FRE_word = (1/(1/fre+pow(10,-8))*pow(2,32))/400000000;
 		IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
 		Times = pow(10,8)/fre;
-		IOWR(TIMES_BASE,0,2*Times);
+		IOWR(TIMES_BASE,0,4*Times);
 	}
 	else
 	{
-		FRE_word = ((fre*200)*pow(2,32))/100000000;
+		FRE_word = ((fre*200)*pow(2,32))/400000000;
 		IOWR(SAMP_CLK_KW_BASE,0,FRE_word);
-		Times = 200;
+		Times = 400;
 		IOWR(TIMES_BASE,0,Times);
 	}
 }
@@ -448,14 +331,14 @@ void getKw(double fre){
 /****************************************幅频特性曲线绘制函数*******************************************************/
 
 void Paint_V_f(float fre_sweep,int Range_down,int Range_up){
-	int rdaddress = 0;
-	while(!IORD(VPP_FOUND_BASE,0));//继电器0101
+	while(!IORD(VPP_FOUND_BASE,0));//继电器0101-0111
 	double addata_in = getVpp(IORD(VPP_BASE,0));
 
 	//寻找截止频率点+存储数据准备绘图
 	if(draw_end){
 		Vpp_pf[rdaddress] = addata_in;
-		fre_trans_pf[rdaddress] = 95*log10(fre_sweep)+16;//非均匀量化
+//		fre_trans_pf[rdaddress] = 95*log10(fre_sweep)+16;//非均匀量化
+		fre_trans_pf[rdaddress] = 126*log10(fre_sweep)+8;//非均匀量化
 		fre_pf[rdaddress] = fre_sweep;
 		rdaddress++;
 
@@ -467,25 +350,32 @@ void Paint_V_f(float fre_sweep,int Range_down,int Range_up){
 			storge_end = 1;
 			rdaddress = 0;
 			for(int i = 1; i < rda_end - 1; i++){
+				if((Vpp_pf[i]/Vpp_pf[i-1] >= 2) && (Vpp_pf[i]/Vpp_pf[i+1] >= 2)){
+					Vpp_pf[i] = (Vpp_pf[i-1]+Vpp_pf[i])/2;
+				}
 				if(Vpp_pf[i-1] > max_of_Vpp*0.7 && Vpp_pf[i+1] <= max_of_Vpp*0.7){
 					fre_cut = fre_pf[i];
-					lcdDispFloatSmall(383, 419, BLACK, WHITE, fre_cut);
+					lcdRectClear(383, 419, 455, 432, BACKGROUND);
+					lcdDispDecSmall(383, 419, BLACK, WHITE, fre_cut);
 				}
 			}
+			printf("Store over!\n");
 		}
 	}
 
 	if(storge_end){
+		printf("Begin drawing V-f!\n");
 		storge_end = 0;
 		draw_end = 0;
-		fre_range = (95*log10(Range_up)+16)-(95*log10(Range_down)+16);
 		for(int i = 0; i < rda_end-1; i++){
 			// Vpp_draw[i] = 230-180*Vpp_pf[i]/max_of_Vpp--y
-			// fre_draw[i] = 764-504*fre_trans_pf[i]/fre_range--x
-			if(Vpp_pf[i+1] >= 0){
-				lcdDrawLine(764-504*fre_trans_pf[i]/fre_range, 230-180*Vpp_pf[i]/max_of_Vpp, 764-504*fre_trans_pf[i+1]/fre_range, 230-180*Vpp_pf[i+1]/max_of_Vpp, BLACK);
+			// fre_draw[i] = 764-504*fre_trans_pf[i]/fre_range--x--原值
+			if(Vpp_pf[i+1] >= 0 && (fre_pf[i] <= fre_pf[i+1])){
+//				printf("fre_trans_pf[%d] = %d\n",i,fre_trans_pf[i]);
+				lcdDrawLine(fre_trans_pf[i], 230-180*(Vpp_pf[i]/max_of_Vpp), fre_trans_pf[i+1], 230-180*(Vpp_pf[i+1]/max_of_Vpp), BLACK);
 			}
 		}
+		printf("Finish drawing!\n");
 		draw_end = 1;
 		end_flag = 1;
 		max_of_Vpp = -100;
@@ -497,7 +387,10 @@ void Paint_V_f(float fre_sweep,int Range_down,int Range_up){
 double getVpp(double vrd){
 	double vin;
 	vin = vrd * 1.312-1.323;
-//	vin = vrd;
+	if(vin <= 0){
+		vin = vrd;
+	}
+	vin = vin/1000;
 	return vin;
 }
 
