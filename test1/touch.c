@@ -16,7 +16,7 @@ int bit_pointer = 0;
 int num_output = 0;
 extern int mode = 0, Range_w = 0;//Range_w=0-F_L|1-F_H
 extern int Num_X = 50,Num_Y = 40;
-extern double Range_up_data = 0,Range_down_data = 0;
+extern int Range_up_data = 0,Range_down_data = 0;
 extern int Troubleshooting,draw_flag;
 extern int switch_mode = 0;
 
