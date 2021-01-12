@@ -17,7 +17,7 @@ int num_output = 0;
 extern int mode = 0, Range_w = 0;//Range_w=0-F_L|1-F_H
 extern int Num_X = 50,Num_Y = 40;
 extern double Range_up_data = 0,Range_down_data = 0;
-extern int Troubleshooting,draw_flag;
+extern int Troubleshooting,draw_flag,ifVDC = 0;
 
 int touchInit(void) {
 	i2cInit();
@@ -325,8 +325,8 @@ void button_table(int page){
 		}
 		bit_pointer = 0;
 		if(Range_w){
-			if(num_output > 20000000){
-				num_output = 20000000;
+			if(num_output > 10000000){
+				num_output = 10000000;
 				lcdRectClear(126, 425, 198, 437, BACKGROUND);
 				lcdDispDecSmall(129, 425, BLACK, WHITE, num_output);
 			}
@@ -353,6 +353,7 @@ void button_table(int page){
 	if(touchResponse(Num_X+50, Num_X+100, Num_Y+150, Num_Y+200, page) == 1)
 	{
 		/*按键功能定义区——Begin*/
+		ifVDC = (ifVDC+1)%2;
 		if((bit_pointer == 0) && (Range_w)){
 			lcdRectClear(126, 425, 198, 437, BACKGROUND);
 		}
